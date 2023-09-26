@@ -108,6 +108,10 @@ const delete_device = async (deviceId) => {
   }
 }
 
+const log_single_data = async ()=>{
+  
+}
+
 
 module.exports={
     get_acc:get_acc,
