@@ -3,7 +3,6 @@ var graphDiv = document.getElementById('acc_graph');
 var recorded_lbl = document.getElementById('recorded');
 var btn_scroll = document.getElementById('btn-autoscroll');
 var btn_download = document.getElementById('btn-download');
-var temperature_lbl = document.getElementById('lbl-temperature');
 var btn_axis = {
     x:document.getElementById('btn-x'),
     y:document.getElementById('btn-y'),
@@ -426,12 +425,6 @@ socket_io.on('acc_data', async (data) => {
          draw_acc(data_acc);
     }
 });
-
-socket_io.on('hardware_info', async (data) => {
-    temperature_lbl.innerHTML = `${data.temperature} 'C`;
-    console.log(data);
-});
-
 
 let history_beacon = setInterval(async ()=>{
     try {
