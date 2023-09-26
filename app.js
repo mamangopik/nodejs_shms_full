@@ -297,9 +297,13 @@ client.on('message', async (topic, payload) => {
             data = {
                 value:payload.value,
                 timestamp:timestamp,
-                label:payload.label
+                label:payload.label,
+                topic:unparsed_topic
             }
             update_single_data(unparsed_topic,data,timestamp)
+            db.log_single_data(data).then(()=>{
+                console.log("data logged to local DB");    
+            });
         }
         
     } catch (error) {

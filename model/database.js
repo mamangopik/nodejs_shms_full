@@ -108,8 +108,18 @@ const delete_device = async (deviceId) => {
   }
 }
 
-const log_single_data = async ()=>{
-  
+const log_single_data = async (data)=>{
+  meassurement_data = data.value;
+  timestamp_data = data.timestamp;
+  variable_name = data.label;
+  topic = data.topic;
+  // console.log(meassurement_data,timestamp_data);
+  const query = `INSERT INTO single_data_log (value, topic, variable_name,timestamp)
+                  VALUES (${parseFloat(meassurement_data)},'${topic}','${variable_name}',${timestamp_data}); `;
+  // console.log(query);
+  const result = await pool.query(query);
+  console.log('data logged');
+  return 1
 }
 
 
@@ -126,5 +136,6 @@ module.exports={
     update_device:update_device,
     delete_device:delete_device,
     get_topic_by_id:get_topic_by_id,
+    log_single_data:log_single_data,
     pool:pool
 }
