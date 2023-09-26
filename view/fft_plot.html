@@ -1,0 +1,169 @@
+<html>
+    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="icon" href="/images/favicon.png">
+        <!-- Load Bootstrap 3 CSS -->
+        <link rel="stylesheet" href="/css/bootstrap3.min.css">
+        <!-- Load Plotly.js into the DOM -->
+        <script src='/js/plotly.min.js'></script>
+        <script src="/js/socket-io.min.js"></script>
+        <style>
+            .row.display-flex {
+            display: flex;
+            flex-wrap: wrap;
+            }
+            .row.display-flex > [class*='col-'] {
+            display: flex;
+            flex-direction: column;
+            }
+        </style>
+        <script src="/js/jquery.min.js"></script>
+        <script src="/js/bootstrap3.min.js"></script>
+    </head>
+    <body>
+        <!-- Modal -->
+        <div class="modal fade jumbotron" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+            <div class="container">
+                <div class="row">
+                    <div class="col-md-6 col-md-offset-3">
+                        <h2 class="text-center">Settings</h2>
+                        <form>
+                            <div class="form-group">
+                                <label for="dropdown">Node name:</label>
+                                <div class="dropdown">
+                                    <button class="btn btn-primary dropdown-toggle" type="button" data-toggle="dropdown">Select an Option
+                                    <span class="caret"></span></button>
+                                    <ul class="dropdown-menu">
+                                      <li><a href="#">Option 1</a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-sm-10 col-lg-10">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary">Save changes</button>
+                        <button id="btn-download" class="btn btn-success" type="button">Download History</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="container">
+            <div class="row">
+                <div class="col-md-12 text-center">
+                    <h3>Realtime Graph</h3>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-3" >
+                    <h5 id="recorded"></h5>
+                </div>
+                <div class="col-md-3" >
+                    <button id="btn-autoscroll" class="btn btn-primary" type="button">Auto scroll</button>
+                    <button id="btn-x" class="btn btn-primary btn-sm" type="button">X</button>
+                    <button id="btn-y" class="btn btn-primary btn-sm" type="button">Y</button>
+                    <button id="btn-z" class="btn btn-primary btn-sm" type="button">Z</button>
+                    <!-- Button trigger modal -->
+                    <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#exampleModal">
+                        Settings
+                    </button>
+                </div>
+            </div>
+
+            <div class="row">   
+                <div class="col-md-12">
+                    <div id='acc_graph' style="border-radius: 5%;"></div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-12">
+                    <div id='acc_history' style="border-radius: 5%;"></div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-12">
+                    <div id='fft_graph_x' style="border-radius: 5%;"></div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-12">
+                    <div id='fft_graph_y' style="border-radius: 5%;"></div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-12">
+                    <div id='fft_graph_z' style="border-radius: 5%;"></div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="jumbotron btn btn-warning">
+                        <h4 id="lbl-temperature">'C</h4>
+                    </div>
+                </div>
+            </div>
+            <!-- <div class="row">
+                <div class="col-sm-2">
+                    <div class="jumbotron btn btn-warning">
+                        <h4 id="lbl-temperature">'C</h4>
+                    </div>
+                </div>
+                <div id='acc_history' class="col-sm-10" style="border-radius: 5%;">
+                </div>
+            </div> -->
+        </div>
+    </body>
+    <script src="/js/fft_ws_com.js"></script>
+    <script>
+        var x = {
+	    	y: acc_data.x,
+	    	mode: 'lines',
+	    	type: 'scatter',
+	    	name: 'x',
+	    };
+        var y = {
+	    	y: acc_data.y,
+	    	mode: 'lines',
+	    	type: 'scatter',
+	    	name: 'x',
+	    };
+        var z = {
+	    	y: acc_data.z,
+	    	mode: 'lines',
+	    	type: 'scatter',
+	    	name: 'x',
+	    };
+	    // Plotly.newPlot('acc_graph', [x,y,z], layout, toolbar);
+        // Plotly.newPlot('acc_history', [x,y,z], layout);
+
+        var fft_x = {
+	    	y: [],
+	    	mode: 'lines',
+	    	type: 'scatter',
+	    	name: 'x',
+	    };
+        var fft_y = {
+	    	y:[],
+	    	mode: 'lines',
+	    	type: 'scatter',
+	    	name: 'x',
+	    };
+        var fft_z = {
+	    	y: [],
+	    	mode: 'lines',
+	    	type: 'scatter',
+	    	name: 'x',
+	    };
+	    Plotly.newPlot('fft_graph_x', [fft_x,fft_y,fft_z], layout_fft.x, toolbar);
+        Plotly.newPlot('fft_graph_y', [fft_x,fft_y,fft_z], layout_fft.y, toolbar);
+        Plotly.newPlot('fft_graph_z', [fft_x,fft_y,fft_z], layout_fft.z, toolbar);
+    </script>
+</html>
