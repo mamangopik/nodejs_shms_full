@@ -1,3 +1,4 @@
+console.log('jalan')
 const db = require('./model/database');
 const path = require('path')
 const cors = require('cors');
@@ -8,8 +9,9 @@ const { start } = require('repl');
 const socket = require('socket.io');
 require('dotenv').config();
 
+app_port = process.env.PORT
 const app = express();
-const server = app.listen(process.env.PORT);
+const server = app.listen(app_port);
 //ws setup
 const io = socket(server);
 app.all('/', function (request, response, next) {
