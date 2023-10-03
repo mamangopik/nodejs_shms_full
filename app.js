@@ -1,4 +1,3 @@
-console.log('jalan')
 const db = require('./model/database');
 const path = require('path')
 const cors = require('cors');
@@ -272,6 +271,7 @@ client.on('message', async (topic, payload) => {
     topic = topic.replace('/shms/','');
     topic = topic.replace('/accelerometer','');
     payload = payload.toString();
+    console.log(payload);
     try {
         time_data_in = (new Date().getTime() / 1000);
         obj={};
@@ -303,9 +303,9 @@ client.on('message', async (topic, payload) => {
                 topic:unparsed_topic
             }
             update_single_data(unparsed_topic,data,timestamp)
-            db.log_single_data(data).then(()=>{
-                console.log("data logged to local DB");    
-            });
+            // db.log_single_data(data).then(()=>{
+            //     console.log("data logged to local DB");    
+            // });
         }
         
     } catch (error) {

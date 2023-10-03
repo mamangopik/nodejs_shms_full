@@ -168,7 +168,7 @@ const draw_node_list = () => {
                                 <a href="#update" data-toggle="modal" data-target="#exampleModal" id="edit_url_${element.id}">
                                     <img width="20" height="20" src="/images/edit.png" alt="edit">
                                 </a>
-                                <a href="http://simonbatapa.local:5555/realtime_graph/${element.type}?topic=${element.topic}" target="_blank">
+                                <a href="http://brains.local:7777/realtime_graph/${element.type}?topic=${element.topic}" target="_blank">
                                     <img width="20" height="20" src="/images/open.png" alt="open">
                                 </a>                
                             </div>
