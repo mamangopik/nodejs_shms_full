@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<style>
+			.back {
+				background: #17A1A5;
+				width: 100%;
+				position: absolute;
+				top: 0;
+				bottom: 0;
+				left: 0;
+				display: flex;
+				align-items: center;
+				/* Vertically center content */
+				justify-content: center;
+				/* Horizontally center content */
+			}
+
+			.div-center {
+				background-color: #fff;
+				max-width: 100%;
+				max-height: 100%;
+				overflow: auto;
+				padding: 1em 2em;
+				display: table;
+				border-radius: 20px;
+			}
+
+			.content {
+				display: inline-block;
+				vertical-align: middle;
+				align-self: center;
+				text-align: center;
+				/* Horizontally center child elements */
+			}
+
+			.div-center {
+				align-self: center;
+				text-align: center;
+				/* Horizontally center child elements */
+			}
+
+            #image-container {
+                position: relative;
+            }
+
+            #bg-logo {
+                position: sticky;
+                top: 0;
+                left: 0;
+                z-index: 1;
+            }
+            #logo {
+                position: absolute;
+                top: 0;
+                left: 0;
+                z-index: 3;
+            }
+            #net-icon {
+                position:absolute;
+                top: 0;
+                left: 0;
+                z-index: 2;
+            }
+
+            .curved-img {
+                border-radius: 20px;
+            }
+
+			@media (max-width: 767px) {
+				.div-center {
+					top: 0;
+					left: 0;
+					right: 0;
+					bottom: 0;
+					position: absolute;
+				}
+			}
+		</style>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<link rel="icon" href="/images/favicon.png">
+		<!-- Load Bootstrap 3 CSS -->
+		<link rel="stylesheet" href="/css/bootstrap3.min.css">
+	</head>
+	<body>
+		<div class="container">
+			<div class="picture">
+				<img src="/images/idge.png" alt="">
+			</div>
+			<div class="back">
+				<div class="div-center">
+					<div class="row">
+						<div class="col-md-6" id="image-container">
+							<!-- <img id="" src="/images/idge.png" alt="" class="img-responsive curved-img"> -->
+                            <img id="logo" src="/images/removed-brains.png" alt="" class="img-responsive curved-img">
+                            <img id="net-icon" src="/images/removed-network.png" alt="" class="img-responsive curved-img">
+                            <img id="bg-logo" src="/images/background-logos.png" alt="" class="img-responsive curved-img">
+						</div>
+						<div class="col-md-6">
+							<div class="content">
+								<h3>Login</h3>
+								<hr />
+								<form>
+									<div class="form-group">
+										<label for="exampleInputEmail1">Email address</label>
+										<input id="email" type="email" class="form-control" id="exampleInputEmail1" placeholder="Email">
+									</div>
+									<div class="form-group">
+										<label for="exampleInputPassword1">Password</label>
+										<input id="password" type="password" class="form-control" id="exampleInputPassword1" placeholder="Password">
+									</div>
+									<button id="btn-login" type="button" class="btn btn-primary">Login</button>
+									<hr />
+									<button id="btn-signup" type="button" class="btn btn-link">Signup</button>
+								</form>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</body>
+</html>
+
+
+<script>
+	var btn_login = document.getElementById("btn-login");
+	var btn_signup = document.getElementById("btn-signup");
+	const baseUrl = window.location.protocol + "//" + window.location.host;
+
+	async function postData(url = "", data = {}) {
+	// Default options are marked with *
+	const response = await fetch(url, {
+		method: "POST",
+		headers: {
+		"Content-Type": "application/json",
+		// 'Content-Type': 'application/x-www-form-urlencoded',
+		},body: JSON.stringify(data), // body data type must match "Content-Type" header
+	});
+	return response.json(); // parses JSON response into native JavaScript objects
+	}
+
+
+	btn_login.onclick = async ()=>{
+		// json_data = {
+		// 	username:document.getElementById("email").value,
+		// 	password:document.getElementById("password").value
+		// }
+		// let data = await postData(baseUrl+"/api/login_validator/",json_data);
+		// console.log(data);
+		
+	}
+
+	btn_signup.onclick = async ()=>{
+		
+	}
+
+    setInterval(async ()=>{
+        const image = document.getElementById("net-icon");
+        let currentRotation = parseFloat(image.style.transform.replace("rotate(", "").replace("deg)", ""));
+        
+        // If there's no current rotation or it's NaN, set it to 0
+        if (isNaN(currentRotation)) {
+            currentRotation = 0;
+        }
+        
+        const newRotation = currentRotation + 0.5;
+        image.style.transform = `rotate(${newRotation}deg)`;
+    },50);
+</script>

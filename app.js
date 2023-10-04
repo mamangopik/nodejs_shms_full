@@ -6,6 +6,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const { start } = require('repl');
 const socket = require('socket.io');
+const tokenGenerator = require('uuid-token-generator');
 require('dotenv').config();
 
 app_port = process.env.PORT
@@ -73,6 +74,14 @@ app.get('/realtime_graph/single_data',async(req,res)=>{
 
 app.get('/',async(req,res)=>{
     const static_view = __dirname+'/view/login.html';
+    res.sendFile(static_view);
+});
+
+app.get('/register',async(req,res)=>{
+    token = new tokenGenerator();
+    new_token = token.generate();
+    console.log(new_token);
+    const static_view = __dirname+'/view/register.html';
     res.sendFile(static_view);
 });
 
