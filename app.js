@@ -76,9 +76,36 @@ app.get('/',async(req,res)=>{
     res.sendFile(static_view);
 });
 
+
 app.get('/devices',async(req,res)=>{
     const static_view = __dirname+'/view/devices.html';
-    res.sendFile(static_view);
+    const userData = req.cookies.login_info;
+    if (userData) {
+        res.sendFile(static_view);
+    } else {
+        console.log("belom login");
+        res.redirect('/');
+    }
+});
+
+app.post('/api/login_validator',async(req,res)=>{
+    username = req.body.username;
+    password = req.body.password;
+    console.log(req.body);
+    validated = await db.user_validation(username,password);
+    if (validated){
+        randomNumber=Math.random().toString();
+        opt = { 
+                maxAge: 2.628e+9,
+                httpOnly: true 
+            };
+        randomNumber=randomNumber.substring(2,randomNumber.length);
+        res.cookie('login_info',randomNumber, opt);
+        res.json({status:"akun ditemukan"});
+    }else{
+        res.json({status:"akun tidak ditemukan"});
+    }
+    // res.json({siapa:"yang nanya"});
 });
 
 app.get('/api/devices',async(req,res)=>{
