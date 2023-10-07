@@ -6,6 +6,7 @@ var tb_type = document.getElementById('tb_type');
 var tb_topic = document.getElementById('tb_topic');
 var btn_add = document.getElementById('btn-add');
 var btn_confirm_delete = document.getElementById('btn-confirm-delete');
+var btn_logout = document.getElementById('btn-logout');
 var node_id_to_delete = {
 	label: document.getElementById('node_id_to_delete'),
 	id: document.getElementById('tb_node_id_to_delete')
@@ -215,6 +216,13 @@ const draw_node_list = () => {
 		});
 }
 
+// Function to delete a cookie by name
+function deleteCookie(cookieName) {
+    // Set the expiration date to a date in the past (1 January 1970)
+	document.cookie = cookieName + '=; Max-Age=0'
+}
+
+
 window.onload = ()=>{
     draw_node_list();
 }
@@ -225,6 +233,11 @@ btn_add.onclick = () => {
 	tb_name.value = '';
 	tb_type.value = '';
 	tb_topic.value = '';
+}
+
+btn_logout.onclick = ()=>{
+	deleteCookie("login_info");
+	window.location = baseUrl;
 }
 
 btn_save.onclick = () => {

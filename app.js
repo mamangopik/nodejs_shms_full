@@ -1,5 +1,12 @@
+require('dotenv').config();
+
+app_port = process.env.PORT
+db_host = process.env.DB_HOST
+db_user = process.env.DB_USER
+db_pwd = process.env.DB_PWD
+db_name = process.env.DB_NAME
 const Database = require('./model/database');
-const db = new Database('localhost', 'hisafa', 'janganlupa', 'simon_batapa');
+const db = new Database(db_host, db_user, db_pwd, db_name);
 const path = require('path')
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
@@ -8,9 +15,7 @@ const bodyParser = require('body-parser');
 const { start } = require('repl');
 const socket = require('socket.io');
 const tokenGenerator = require('uuid-token-generator');
-require('dotenv').config();
 
-app_port = process.env.PORT
 const app = express();
 const server = app.listen(app_port);
 //ws setup
@@ -29,13 +34,13 @@ const update_acc_data = async (topic,payload,time_data)=>{
     acc_data[topic]={};
     acc_data[topic] = payload;
     acc_data[topic].timestamp = time_data;
-    io.local.emit('acc_data',acc_data);
+    io.local.emit(topic,acc_data[topic]);
 }
 
 const update_single_data = async (topic,sensor_data,timestamp)=>{
     single_data[topic]={};
     single_data[topic] = sensor_data;
-    io.local.emit('single_data',single_data);
+    io.local.emit('single_data',single_data[topic]);
 }
 
 
@@ -79,9 +84,6 @@ app.get('/',async(req,res)=>{
 });
 
 app.get('/register',async(req,res)=>{
-    token = new tokenGenerator();
-    new_token = token.generate();
-    console.log(new_token);
     const static_view = __dirname+'/view/register.html';
     res.sendFile(static_view);
 });
@@ -103,20 +105,35 @@ app.post('/api/login_validator',async(req,res)=>{
     password = req.body.password;
     console.log(req.body);
     validated = await db.user_validation(username,password);
-    if (validated){
+    if (validated.status){
         randomNumber=Math.random().toString();
         opt = { 
-                maxAge: 2.628e+9,
-                httpOnly: true 
+                maxAge: 2.628e+9
             };
-        randomNumber=randomNumber.substring(2,randomNumber.length);
-        res.cookie('login_info',randomNumber, opt);
+        res.cookie('login_info',validated.uid, opt);
         res.json({status:"akun ditemukan"});
     }else{
         res.json({status:"akun tidak ditemukan"});
     }
-    // res.json({siapa:"yang nanya"});
 });
+
+app.post('/api/register',async(req,res)=>{
+    username = req.body.username;
+    password = req.body.password;
+    console.log(req.body);
+    token = new tokenGenerator(1024);
+    new_token = token.generate();
+    new_token = `${new_token}${new Date().getTime()}`;
+    console.log(new_token);
+    validated = await db.user_register(username,password,new_token);
+    if (validated){
+        res.json({"status":200})
+    }
+    else{
+        res.json({"status":"username dobel"})
+    }
+});
+
 
 app.get('/api/devices',async(req,res)=>{
     db.get_devices().then((result)=>{
@@ -308,7 +325,7 @@ client.on('message', async (topic, payload) => {
     topic = topic.replace('/shms/','');
     topic = topic.replace('/accelerometer','');
     payload = payload.toString();
-    console.log(payload);
+    // console.log(payload);
     try {
         time_data_in = (new Date().getTime() / 1000);
         obj={};

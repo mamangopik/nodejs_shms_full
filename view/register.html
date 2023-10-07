@@ -98,7 +98,7 @@
 						</div>
 						<div class="col-md-6">
 							<div class="content">
-								<h3>Login</h3>
+								<h3>Register</h3>
 								<hr />
 								<form>
 									<div class="form-group">
@@ -109,9 +109,9 @@
 										<label for="exampleInputPassword1">Password</label>
 										<input id="password" type="password" class="form-control" id="exampleInputPassword1" placeholder="Password">
 									</div>
-									<button id="btn-login" type="button" class="btn btn-primary">Login</button>
+									<button id="btn-signup" type="button" class="btn btn-primary">Signup</button>
 									<hr />
-									<button id="btn-signup" type="button" class="btn btn-link">Signup</button>
+									<button id="btn-login" type="button" class="btn btn-link">Login</button>
 								</form>
 							</div>
 						</div>
@@ -124,8 +124,8 @@
 
 
 <script>
-	var btn_login = document.getElementById("btn-login");
 	var btn_signup = document.getElementById("btn-signup");
+	var btn_login = document.getElementById("btn-login");
 	const baseUrl = window.location.protocol + "//" + window.location.host;
 
 	async function postData(url = "", data = {}) {
@@ -141,18 +141,17 @@
 	}
 
 
-	btn_login.onclick = async ()=>{
-		// json_data = {
-		// 	username:document.getElementById("email").value,
-		// 	password:document.getElementById("password").value
-		// }
-		// let data = await postData(baseUrl+"/api/login_validator/",json_data);
-		// console.log(data);
-		
+	btn_signup.onclick = async ()=>{
+		json_data = {
+			username:document.getElementById("email").value,
+			password:document.getElementById("password").value
+		}
+		let data = await postData(baseUrl+"/api/register/",json_data);
+		console.log(data);
 	}
 
-	btn_signup.onclick = async ()=>{
-		
+	btn_login.onclick = async ()=>{
+		window.location = baseUrl;
 	}
 
     setInterval(async ()=>{

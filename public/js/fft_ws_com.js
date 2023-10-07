@@ -19,7 +19,10 @@ var acc_data={
     z:[],
     timestamp:[]
 }
-
+const urlParams = new URLSearchParams(window.location.search);
+const topic = urlParams.get('topic'); 
+const baseUrl = window.location.protocol + "//" + window.location.host;
+var python_ws_addr = 'ws://'+window.location.host.replace(':7777',':5556');
 var acc_to_send = {};
 var acc_to_send_status = 0;
 var indeks = 0;
@@ -317,16 +320,7 @@ const download = async ()=>{
 }
 
 // SOCKET
-const baseUrl = window.location.protocol + "//" + window.location.host;
 var socket_io = io.connect(baseUrl);
-var python_ws_addr = 'ws://'+window.location.host.replace(':5555',':5556');
-
-// beacon = setInterval(()=>{
-//     socket_io.emit('req_acc',{
-//         topic:'topic',
-//         id:socket_io.id
-//     });
-// },500);
 
 function connect() {
     var ws = new WebSocket(python_ws_addr); 
@@ -415,12 +409,10 @@ function connect() {
 
 connect();
 
-socket_io.on('acc_data', async (data) => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const topic = urlParams.get('topic'); 
+socket_io.on(topic, async (data) => {
     // console.log(topic);
-    // console.log(data);
-    data_acc = data[topic];
+    console.log(data);
+    data_acc = data;
     if (data_acc.x_values) {
          draw_acc(data_acc);
     }
