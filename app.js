@@ -1,4 +1,5 @@
-const db = require('./model/database');
+const Database = require('./model/database');
+const db = new Database('localhost', 'hisafa', 'janganlupa', 'simon_batapa');
 const path = require('path')
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
