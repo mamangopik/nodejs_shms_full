@@ -148,6 +148,11 @@
 		}
 		let data = await postData(baseUrl+"/api/register/",json_data);
 		console.log(data);
+		if (data.status == "OK"){
+			window.location=baseUrl;
+		}else{
+			alert(data.message);
+		}
 	}
 
 	btn_login.onclick = async ()=>{

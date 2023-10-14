@@ -111,9 +111,19 @@ app.post('/api/login_validator',async(req,res)=>{
                 maxAge: 2.628e+9
             };
         res.cookie('login_info',validated.uid, opt);
-        res.json({status:"akun ditemukan"});
+        payload={
+            status:"OK",
+            message: "Login success.",
+            status_code:200
+        }
+        res.json(payload);
     }else{
-        res.json({status:"akun tidak ditemukan"});
+        payload={
+            status:"ERROR",
+            message: "user not found or wrong input",
+            status_code:404
+        }
+        res.json(payload);
     }
 });
 
@@ -127,10 +137,20 @@ app.post('/api/register',async(req,res)=>{
     console.log(new_token);
     validated = await db.user_register(username,password,new_token);
     if (validated){
-        res.json({"status":200})
+        payload={
+            status:"OK",
+            message: "Register success.",
+            status_code:200
+        }
+        res.json(payload);
     }
     else{
-        res.json({"status":"username dobel"})
+        payload={
+            status:"ERROR",
+            message: `user ${username} already exist`,
+            status_code:404
+        }
+        res.json(payload);
     }
 });
 

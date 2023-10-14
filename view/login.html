@@ -24,6 +24,17 @@
 				padding: 1em 2em;
 				display: table;
 				border-radius: 20px;
+				z-index: 1;
+			}
+
+			#slideshow {
+				position: absolute;
+				top: 0;
+				left: 0;
+				background-color: #c71e1e5b;
+				width: 100%;
+				height: 50%;
+				border-radius: 20px;
 			}
 
 			.content {
@@ -88,7 +99,11 @@
 				<img src="/images/idge.png" alt="">
 			</div>
 			<div class="back">
+				<!-- <div id="slideshow">
+					<h1>asd</h1>
+				</div> -->
 				<div class="div-center">
+					
 					<div class="row">
 						<div class="col-md-6" id="image-container">
 							<!-- <img id="" src="/images/idge.png" alt="" class="img-responsive curved-img"> -->
@@ -148,6 +163,9 @@
 		}
 		let data = await postData(baseUrl+"/api/login_validator/",json_data);
 		console.log(data);
+		if (data.status == "OK"){
+			window.location=baseUrl+"/devices";
+		}
 		
 	}
 
