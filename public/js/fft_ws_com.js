@@ -432,42 +432,44 @@ let history_beacon = setInterval(async ()=>{
 btn_scroll.onclick = ()=>{
     if(autoscroll_status === 1){
         autoscroll_status = 0;
-        btn_scroll.className = 'btn btn-disable btn-sm'
+        btn_scroll.className = 'btn btn-disable btn-md'
     }else{
         autoscroll_status = 1;
-        btn_scroll.className = 'btn btn-primary btn-sm'
+        btn_scroll.className = 'btn btn-primary btn-md'
     }
 }
 
 btn_download.onclick = async ()=>{
-     download();
+    if(acc_data.x.length>10){
+        download();
+    }
 }
 btn_axis.x.onclick=()=>{
     if(btn_axis.toggle_x===1){
         btn_axis.toggle_x = 0;
-        btn_axis.x.className='btn btn-disable btn-sm';
+        btn_axis.x.className='btn btn-disable btn-md';
     }else{
         btn_axis.toggle_x = 1;
-        btn_axis.x.className='btn btn-primary btn-sm';
+        btn_axis.x.className='btn btn-primary btn-md';
     }
 }
 
 btn_axis.y.onclick=()=>{
     if(btn_axis.toggle_y===1){
         btn_axis.toggle_y = 0;
-        btn_axis.y.className='btn btn-disable btn-sm';
+        btn_axis.y.className='btn btn-disable btn-md';
     }else{
         btn_axis.toggle_y = 1;
-        btn_axis.y.className='btn btn-primary btn-sm';
+        btn_axis.y.className='btn btn-primary btn-md';
     }
 }
 
 btn_axis.z.onclick=()=>{
     if(btn_axis.toggle_z===1){
         btn_axis.toggle_z = 0;
-        btn_axis.z.className='btn btn-disable btn-sm';
+        btn_axis.z.className='btn btn-disable btn-md';
     }else{
         btn_axis.toggle_z = 1;
-        btn_axis.z.className='btn btn-primary btn-sm';
+        btn_axis.z.className='btn btn-primary btn-md';
     }
 }

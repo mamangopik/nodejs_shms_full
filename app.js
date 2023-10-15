@@ -6,6 +6,7 @@ db_user = process.env.DB_USER
 db_pwd = process.env.DB_PWD
 db_name = process.env.DB_NAME
 const Database = require('./model/database');
+const sqlite = require('./model/sqlitedb');
 const db = new Database(db_host, db_user, db_pwd, db_name);
 const path = require('path')
 const cors = require('cors');
@@ -362,6 +363,10 @@ client.on('message', async (topic, payload) => {
                 obj.time_data.push(time_to_push);
             }
             // db.log_data(obj).then(()=>{
+            //     console.log("data logged to local DB");    
+            // });
+            sqlite.log_acc_data(obj)
+            // .then(()=>{
             //     console.log("data logged to local DB");    
             // });
             update_acc_data(unparsed_topic,payload,obj.time_data)
