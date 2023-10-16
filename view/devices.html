@@ -20,6 +20,12 @@
                 text-align: center;
                 margin-bottom: 5%;
             }
+            .list-group-item {
+                background: linear-gradient(to right, #168bff, #61b2fd); /* Change these colors */
+            }
+            .container-fluid {
+                height: 100%;
+            }
         </style>
         <script src="/js/jquery.min.js"></script>
         <script src="/js/bootstrap3.min.js"></script>
@@ -38,13 +44,15 @@
                         <span class="icon-bar"></span>
                         <span class="icon-bar"></span>
                     </button>
-                    <a class="navbar-brand" href="#">Your Logo</a>
                 </div>
     
                 <!-- Navbar Links -->
                 <div class="collapse navbar-collapse" id="navbar-collapse">
                     <ul class="nav navbar-nav">
-                        <li class="active"><a href="#">Device</a></li>
+                        <li class="active"><a href="http://brains:7777/devices/">Devices</a></li>
+                    </ul>
+                    <ul class="nav navbar-nav">
+                        <li class=""><a href="http://brains:7777/config/">Config</a></li>
                     </ul>
     
                     <!-- Logout Button -->
