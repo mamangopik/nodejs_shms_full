@@ -11,6 +11,9 @@ const toolbar = {
     modeBarButtonsToRemove: ['autoScale2d']
 }
 
+const urlParams = new URLSearchParams(window.location.search);
+const topic = urlParams.get('topic'); 
+
 var layout = {
     height: 500,
     autosize: true,
@@ -59,12 +62,10 @@ const draw_history = async (label)=>{
 // SOCKET
 const baseUrl = window.location.protocol + "//" + window.location.host;
 var socket_io = io.connect(baseUrl);
-var python_ws_addr = 'ws://'+window.location.host.replace(':5555',':5556');
 
-socket_io.on('single_data', async (data) => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const topic = urlParams.get('topic'); 
-    data_var = data[topic];
+socket_io.on(topic, async (data) => {
+    console.log(data);
+    data_var = data;
     collected_data.value.push(data_var.value);
     collected_data.timestamp.push(data_var.timestamp);
     draw_history(data_var.label);

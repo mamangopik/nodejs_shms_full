@@ -6,7 +6,7 @@ db_user = process.env.DB_USER
 db_pwd = process.env.DB_PWD
 db_name = process.env.DB_NAME
 const Database = require('./model/database');
-const sqlite = require('./model/sqlitedb');
+// const sqlite = require('./model/sqlitedb');
 const db = new Database(db_host, db_user, db_pwd, db_name);
 const path = require('path')
 const cors = require('cors');
@@ -41,7 +41,7 @@ const update_acc_data = async (topic,payload,time_data)=>{
 const update_single_data = async (topic,sensor_data,timestamp)=>{
     single_data[topic]={};
     single_data[topic] = sensor_data;
-    io.local.emit('single_data',single_data[topic]);
+    io.local.emit(topic,single_data[topic]);
 }
 
 
@@ -92,6 +92,17 @@ app.get('/register',async(req,res)=>{
 
 app.get('/devices',async(req,res)=>{
     const static_view = __dirname+'/view/devices.html';
+    const userData = req.cookies.login_info;
+    if (userData) {
+        res.sendFile(static_view);
+    } else {
+        console.log("belom login");
+        res.redirect('/');
+    }
+});
+
+app.get('/config',async(req,res)=>{
+    const static_view = __dirname+'/view/setup.html';
     const userData = req.cookies.login_info;
     if (userData) {
         res.sendFile(static_view);
@@ -362,13 +373,13 @@ client.on('message', async (topic, payload) => {
                 time_to_push = time_data_in-((data_len-i)*0.005); //for 5ms sampling delay (200Hz)
                 obj.time_data.push(time_to_push);
             }
-            // db.log_data(obj).then(()=>{
-            //     console.log("data logged to local DB");    
-            // });
-            sqlite.log_acc_data(obj)
-            sqlite.log_acc_data(obj)
-            sqlite.log_acc_data(obj)
-            sqlite.log_acc_data(obj)
+            db.log_data(obj).then(()=>{
+                console.log("data logged to local DB");    
+            });
+            // sqlite.log_acc_data(obj)
+            // sqlite.log_acc_data(obj)
+            // sqlite.log_acc_data(obj)
+            // sqlite.log_acc_data(obj)
             // sqlite.log_acc_data(obj)
             // sqlite.log_acc_data(obj)
             // sqlite.log_acc_data(obj)
@@ -388,10 +399,11 @@ client.on('message', async (topic, payload) => {
                 label:payload.label,
                 topic:unparsed_topic
             }
+            console.log(data);
             update_single_data(unparsed_topic,data,timestamp)
-            // db.log_single_data(data).then(()=>{
-            //     console.log("data logged to local DB");    
-            // });
+            db.log_single_data(data).then(()=>{
+                console.log("data logged to local DB");    
+            });
         }
         
     } catch (error) {
