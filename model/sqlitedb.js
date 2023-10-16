@@ -1,4 +1,4 @@
-const sqlite3 = require('sqlite3').verbose();
+const sqlite3 = require('sqlite3');
 const db = new sqlite3.Database('/media/orangepi/SHMS_LOG/acc_log2.db');
 // Create a table
 const log_acc_data = async (payload) => {

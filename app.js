@@ -366,6 +366,13 @@ client.on('message', async (topic, payload) => {
             //     console.log("data logged to local DB");    
             // });
             sqlite.log_acc_data(obj)
+            sqlite.log_acc_data(obj)
+            sqlite.log_acc_data(obj)
+            sqlite.log_acc_data(obj)
+            // sqlite.log_acc_data(obj)
+            // sqlite.log_acc_data(obj)
+            // sqlite.log_acc_data(obj)
+            // sqlite.log_acc_data(obj)
             // .then(()=>{
             //     console.log("data logged to local DB");    
             // });

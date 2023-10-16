@@ -414,7 +414,7 @@ socket_io.on(topic, async (data) => {
     console.log(data);
     data_acc = data;
     if (data_acc.x_values) {
-         draw_acc(data_acc);
+        await draw_acc(data_acc);
     }
 });
 
