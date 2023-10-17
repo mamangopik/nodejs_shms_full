@@ -6,7 +6,7 @@ db_user = process.env.DB_USER
 db_pwd = process.env.DB_PWD
 db_name = process.env.DB_NAME
 const Database = require('./model/database');
-const sqlite = require('./model/sqlitedb');
+//const sqlite = require('./model/sqlitedb');
 const db = new Database(db_host, db_user, db_pwd, db_name);
 const path = require('path')
 const cors = require('cors');
@@ -362,13 +362,13 @@ client.on('message', async (topic, payload) => {
                 time_to_push = time_data_in-((data_len-i)*0.005); //for 5ms sampling delay (200Hz)
                 obj.time_data.push(time_to_push);
             }
-            // db.log_data(obj).then(()=>{
-            //     console.log("data logged to local DB");    
-            // });
-            sqlite.log_acc_data(obj)
-            sqlite.log_acc_data(obj)
-            sqlite.log_acc_data(obj)
-            sqlite.log_acc_data(obj)
+            db.log_data(obj).then(()=>{
+                console.log("data logged to local DB");    
+            });
+            //sqlite.log_acc_data(obj)
+            //sqlite.log_acc_data(obj)
+            //sqlite.log_acc_data(obj)
+            //sqlite.log_acc_data(obj)
             // sqlite.log_acc_data(obj)
             // sqlite.log_acc_data(obj)
             // sqlite.log_acc_data(obj)
