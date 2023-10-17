@@ -13,7 +13,6 @@ const cookieParser = require('cookie-parser');
 const express = require('express');
 const bodyParser = require('body-parser');
 const { start } = require('repl');
-const socket = require('socket.io');
 
 const app = express();
 const path = require('path')
@@ -31,6 +30,13 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
 
+app.all('/', function (request, response, next) {
+    response.header("Access-Control-Allow-Origin", "*");
+    response.header("Access-Control-Allow-Headers", "X-Requested-With");
+    next();
+});
+
+
 const viewpath = __dirname+'/static/';
 const Page = require('./utils/page_handler');
 const Page_handler = new Page(app,express,path,viewpath);
@@ -38,8 +44,9 @@ const Page_handler = new Page(app,express,path,viewpath);
 const API = require('./utils/API_handler');
 const API_handler = new API(app,db);
 
-const Mqtt_handler = require('./utils/mqtt_handler');
-const mqtt_handler = new Mqtt_handler();
-
-
 const server = app.listen(app_port);
+
+const Mqtt_handler = require('./utils/mqtt_handler');
+const mqtt_handler = new Mqtt_handler(server,db);
+
+

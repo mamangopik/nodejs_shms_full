@@ -1,15 +1,21 @@
+const socket = require('socket.io');
 const mqtt = require('mqtt')
-require('dotenv').config();
-app_port = process.env.PORT
-db_host = process.env.DB_HOST
-db_user = process.env.DB_USER
-db_pwd = process.env.DB_PWD
-db_name = process.env.DB_NAME
-const Database = require('../model/database');
-const db = new Database(db_host, db_user, db_pwd, db_name);
+
+//global variable for acc_data
+var acc_data = {}
+var single_data = {}
+
 
 class Mqtt_handler{
-    constructor() {
+    constructor(server,db) {
+        this.db = db;
+        //ws setup
+        this.io = socket(server);
+        //ws functions
+        this.io.on('connection',(socket)=>{
+            console.log('got connection');
+        })
+
         this.host = 'localhost';
         this.port = '1883';
         this.clientId = `mqtt_${Math.random().toString(16).slice(3)}`;
@@ -22,7 +28,7 @@ class Mqtt_handler{
         })
 
         this.client.on('connect', () => {
-            db.get_devices().then((results)=>{
+            this.db.get_devices().then((results)=>{
                 results.forEach(device => {
                     this.client.subscribe([device.topic], () => {
                         console.log(`Subscribe to topic '${device.topic}'`);
@@ -43,7 +49,7 @@ class Mqtt_handler{
                 let obj={};
                 payload = JSON.parse(payload);
                 if(payload['sensor_type']=='accelerometer'){
-                    data_len = payload.x_values.length;
+                    let data_len = payload.x_values.length;
                     obj['node']=unparsed_topic;
                     obj['timestamp']=Math.floor(time_data_in);
                     obj['meassurement_data']=payload;
@@ -53,14 +59,10 @@ class Mqtt_handler{
                         let time_to_push = time_data_in-((data_len-i)*0.005); //for 5ms sampling delay (200Hz)
                         obj.time_data.push(time_to_push);
                     }
-                    db.log_data(obj).then(()=>{
+                    this.db.log_data(obj).then(()=>{
                         console.log("data logged to local DB");    
                     });
-                    // sqlite.log_acc_data(obj)
-                    // .then(()=>{
-                    //     console.log("data logged to local DB");    
-                    // });
-                    // update_acc_data(unparsed_topic,payload,obj.time_data)
+                    this.update_acc_data(unparsed_topic,payload,obj.time_data)
                 }
         
                 if(payload['sensor_type']=='single_data'){
@@ -73,8 +75,8 @@ class Mqtt_handler{
                         topic:unparsed_topic
                     }
                     console.log(data);
-                    // update_single_data(unparsed_topic,data,timestamp)
-                    db.log_single_data(data).then(()=>{
+                    this.update_single_data(unparsed_topic,data,timestamp)
+                    this.db.log_single_data(data).then(()=>{
                         console.log("data logged to local DB");    
                     });
                 }
@@ -126,6 +128,23 @@ class Mqtt_handler{
             console.log(error);
         }
     }
+
+    update_acc_data = async (topic,payload,time_data)=>{
+        acc_data[topic]={};
+        acc_data[topic] = payload;
+        acc_data[topic].timestamp = time_data;
+        this.io.local.emit(topic,acc_data[topic]);
+    }
+    
+    update_single_data = async (topic,sensor_data,timestamp)=>{
+        single_data[topic]={};
+        single_data[topic] = sensor_data;
+        this.io.local.emit(topic,single_data[topic]);
+    }
 }
+
+
+
+
 
 module.exports = Mqtt_handler;
