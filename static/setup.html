@@ -6,7 +6,6 @@
         <link rel="stylesheet" href="/css/bootstrap3.min.css">
         <!-- Load Plotly.js into the DOM -->
         <script src='/js/plotly.min.js'></script>
-        <script src="/js/socket-io.min.js"></script>
         <style>
             .row.display-flex {
             display: flex;
@@ -54,10 +53,10 @@
                 <!-- Navbar Links -->
                 <div class="collapse navbar-collapse" id="navbar-collapse">
                     <ul class="nav navbar-nav">
-                        <li class=""><a href="http://brains:7777/devices/">Devices</a></li>
+                        <li class=""><a id="url-device" href="#">Devices</a></li>
                     </ul>
                     <ul class="nav navbar-nav">
-                        <li class="active"><a href="http://brains:7777/config/">Config</a></li>
+                        <li class="active"><a id="url-setup" href="#">Config</a></li>
                     </ul>
     
                     <!-- Logout Button -->
@@ -127,11 +126,16 @@
     </body>
     <script>
         // JavaScript to update the displayed value as the slider is moved
+        const baseUrl = window.location.protocol + "//" + window.location.host;
+
         const freq_slider = document.getElementById("freq-floating-slider");
         const freq_output = document.getElementById("freq-slider-value");
 
         const acc_slider = document.getElementById("acc-floating-slider");
         const acc_output = document.getElementById("acc-slider-value");
+
+        document.getElementById("url-device").href=baseUrl+'/devices';
+        document.getElementById("url-config").href=baseUrl+'/config';
 
         freq_slider.addEventListener("input", function () {
            freq_output.textContent = freq_slider.value;

@@ -225,6 +225,8 @@ function deleteCookie(cookieName) {
 
 window.onload = ()=>{
     draw_node_list();
+	document.getElementById("url-device").href=baseUrl+'/device';
+	document.getElementById("url-setup").href=baseUrl+'/config';
 }
 
 btn_add.onclick = () => {

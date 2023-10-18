@@ -28,7 +28,7 @@ class Mqtt_handler{
         })
 
         this.client.on('connect', () => {
-            this.db.get_devices().then((results)=>{
+            this.db.device_model.get_devices().then((results)=>{
                 results.forEach(device => {
                     this.client.subscribe([device.topic], () => {
                         console.log(`Subscribe to topic '${device.topic}'`);
@@ -59,7 +59,7 @@ class Mqtt_handler{
                         let time_to_push = time_data_in-((data_len-i)*0.005); //for 5ms sampling delay (200Hz)
                         obj.time_data.push(time_to_push);
                     }
-                    this.db.log_data(obj).then(()=>{
+                    this.db.logger_model.log_data(obj).then(()=>{
                         console.log("data logged to local DB");    
                     });
                     this.update_acc_data(unparsed_topic,payload,obj.time_data)
@@ -76,7 +76,7 @@ class Mqtt_handler{
                     }
                     console.log(data);
                     this.update_single_data(unparsed_topic,data,timestamp)
-                    this.db.log_single_data(data).then(()=>{
+                    this.db.logger_model.log_single_data(data).then(()=>{
                         console.log("data logged to local DB");    
                     });
                 }

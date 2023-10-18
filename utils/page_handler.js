@@ -34,7 +34,7 @@ class Page_handler {
             }
         });
         app.get('/config',async(req,res)=>{
-            const static_view = __dirname+'/view/setup.html';
+            const static_view = view_path+'setup.html';
             const userData = req.cookies.login_info;
             if (userData) {
                 res.sendFile(static_view);

@@ -1,4 +1,5 @@
 const tokenGenerator = require('uuid-token-generator');
+const { user_model } = require('../model/database');
 
 class API_handler {
     constructor(app,db) {
@@ -7,7 +8,7 @@ class API_handler {
             let username = req.body.username;
             let password = req.body.password;
             console.log(req.body);
-            let validated = await db.user_validation(username,password);
+            let validated = await db.user_model.user_validation(username,password);
             if (validated.status){
                 let randomNumber=Math.random().toString();
                 let opt = { 
@@ -38,7 +39,7 @@ class API_handler {
             let new_token = token.generate();
             new_token = `${new_token}${new Date().getTime()}`;
             console.log(new_token);
-            let validated = await db.user_register(username,password,new_token);
+            let validated = await db.user_model.user_register(username,password,new_token);
             if (validated){
                 let payload={
                     status:"OK",
