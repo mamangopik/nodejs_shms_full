@@ -10,7 +10,6 @@ class API_handler {
             console.log(req.body);
             let validated = await db.user_model.user_validation(username,password);
             if (validated.status){
-                let randomNumber=Math.random().toString();
                 let opt = { 
                         maxAge: 2.628e+9
                     };
@@ -60,7 +59,7 @@ class API_handler {
 
 
         app.get('/api/devices',async(req,res)=>{
-            db.get_devices().then((result)=>{
+            db.device_model.get_devices().then((result)=>{
                 let payload = {data:result};
                 res.json(payload);
             });
@@ -69,7 +68,7 @@ class API_handler {
         app.post('/api/devices/add',(req,res)=>{
             let data = req.body;
             data['id'] = 'inst'+parseInt(new Date().getTime());
-            db.add_device(data).then((result,error)=>{
+            db.device_model.add_device(data).then((result,error)=>{
                 if(result){
                     let payload = {status:'success adding device'};
                     add_topic_subscribe(data.topic);
@@ -82,8 +81,8 @@ class API_handler {
 
         app.post('/api/devices/update',(req,res)=>{
             let data = req.body;
-            db.get_topic_by_id(data.id).then((topic_old)=>{
-                db.update_device(data).then((result,error)=>{
+            db.device_model.get_topic_by_id(data.id).then((topic_old)=>{
+                db.device_model.update_device(data).then((result,error)=>{
                     if(result){
                         let payload = {status:'success updating device'};
                         let topics = {
@@ -101,9 +100,9 @@ class API_handler {
 
         app.post('/api/devices/remove',async (req,res)=>{
             let id = req.body.id;
-            db.get_topic_by_id(id).then((data)=>{
+            db.device_model.get_topic_by_id(id).then((data)=>{
                 remove_topic_subscribe(data[0].topic);
-                db.delete_device(id).then((result,error)=>{
+                db.device_model.delete_device(id).then((result,error)=>{
                     if(result){
                         let payload = {status:'success removing device'};
                         res.json(payload);
@@ -132,7 +131,7 @@ class API_handler {
                 'timestamp':[]
             }
 
-            db.get_data_bundle(node,unix,limit,offset).then((result)=>{
+            db.logger_model.get_data_bundle(node,unix,limit,offset).then((result)=>{
                 result.forEach(element => {
                     json_string.push(element.json);
                     time_data_string.push(element.time_data)

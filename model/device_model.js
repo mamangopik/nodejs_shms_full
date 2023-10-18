@@ -4,8 +4,8 @@ class Device_model{
     }
     add_device = async (payload) => {
         try {
-          const query = `insert into nodes (type,name,topic,id)
-              values ('${payload.type}','${payload.name}','${payload.topic}','${payload.id}');`;
+          const query = `insert into nodes (type,name,topic,id,log_raw)
+              values ('${payload.type}','${payload.name}','${payload.topic}','${payload.id}',0);`;
           const [result] = await this.pool.query(query);
           return 1;
         } catch (error) {
