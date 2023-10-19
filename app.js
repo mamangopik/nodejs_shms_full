@@ -41,12 +41,12 @@ const viewpath = __dirname+'/static/';
 const Page = require('./utils/page_handler');
 const Page_handler = new Page(app,express,path,viewpath);
 
-const API = require('./utils/API_handler');
-const API_handler = new API(app,db);
-
 const server = app.listen(app_port);
 
 const Mqtt_handler = require('./utils/mqtt_handler');
 const mqtt_handler = new Mqtt_handler(server,db);
+
+const API = require('./utils/API_handler');
+const API_handler = new API(app,db,mqtt_handler);
 
 

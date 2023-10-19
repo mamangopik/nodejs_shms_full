@@ -7,6 +7,7 @@ var tb_topic = document.getElementById('tb_topic');
 var btn_add = document.getElementById('btn-add');
 var btn_confirm_delete = document.getElementById('btn-confirm-delete');
 var btn_logout = document.getElementById('btn-logout');
+const toggleSwitch = document.getElementById("myToggle");
 var node_id_to_delete = {
 	label: document.getElementById('node_id_to_delete'),
 	id: document.getElementById('tb_node_id_to_delete')
@@ -17,7 +18,8 @@ var edit_prop = {
 	type: [],
 	name: [],
 	topic: [],
-	id: []
+	id: [],
+	log_raw:[]
 };
 var nodes_dom = [];
 var delete_buttons = [];
@@ -133,7 +135,8 @@ const draw_node_list = () => {
 		type: [],
 		name: [],
 		topic: [],
-		id: []
+		id: [],
+		log_raw:[]
 	};
 	var nodes_dom = [];
 	var delete_buttons = [];
@@ -156,6 +159,7 @@ const draw_node_list = () => {
 				edit_prop.type.push(element.type);
 				edit_prop.topic.push(element.topic);
 				edit_prop.id.push(element.id);
+				edit_prop.log_raw.push(element.log_raw);
 				nodes_dom.push(`edit_url_${element.id}`);
 				delete_buttons.push(`delete_url_${element.id}`);
 				device_container.innerHTML +=	
@@ -179,6 +183,7 @@ const draw_node_list = () => {
                                 <strong>Data Type:</strong> ${element.type}<br>
                                 <strong>Name:</strong> ${element.name}<br>
                                 <strong>Topic:</strong> ${element.topic}<br>
+								<strong>Log Raw Data:</strong> ${Boolean(element.log_raw)}<br><br>
                                 <strong>ID:</strong> ${element.id}<br><br>
                             </p>
                         </li>
@@ -191,11 +196,22 @@ const draw_node_list = () => {
 					element.addEventListener("click", function() {
                         mode = "update";
 						console.log(id);
+						console.log("test")
                         update_id = edit_prop.id[index];
 						document.getElementById('edit-modal-lbl').innerHTML = "Edit Node Properties";
 						tb_name.value = edit_prop.name[index];
 						tb_type.value = edit_prop.type[index];
 						tb_topic.value = edit_prop.topic[index];
+
+						if(edit_prop.log_raw[index]==1){
+							toggleSwitch.checked = true;
+							document.getElementsByClassName('toggle-switch-handle')[0].style.left='30px';
+							document.getElementsByClassName('toggle-switch')[0].style.backgroundColor='#168bff';
+						}else{
+							toggleSwitch.checked = false;
+							document.getElementsByClassName('toggle-switch-handle')[0].style.left='0px';
+							document.getElementsByClassName('toggle-switch')[0].style.backgroundColor='#ccc';
+						}
 					});
 				}
 			});
@@ -225,7 +241,7 @@ function deleteCookie(cookieName) {
 
 window.onload = ()=>{
     draw_node_list();
-	document.getElementById("url-device").href=baseUrl+'/device';
+	document.getElementById("url-device").href=baseUrl+'/devices';
 	document.getElementById("url-setup").href=baseUrl+'/config';
 }
 
@@ -256,6 +272,19 @@ btn_confirm_delete.onclick = () => {
 	remove_device();
     document.getElementById('btn-cancel-remove').click();
 }
+
+
+toggleSwitch.addEventListener("change", () => {
+    if (toggleSwitch.checked) {
+        document.getElementsByClassName('toggle-switch-handle')[0].style.left='30px';
+		document.getElementsByClassName('toggle-switch')[0].style.backgroundColor='#168bff';
+        console.log("Switch is on");
+    } else {
+        document.getElementsByClassName('toggle-switch-handle')[0].style.left='0px';
+		document.getElementsByClassName('toggle-switch')[0].style.backgroundColor='#ccc';
+        console.log("Switch is off");
+    }
+});
 
 // setInterval(()=>{
 //     document.getElementById('btn-cancel').click();

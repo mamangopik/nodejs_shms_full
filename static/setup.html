@@ -91,7 +91,7 @@
 
                                     <div class="form-group">
                                         <label for="tb_type">Logging Interval:</label>
-                                        <select class="form-control" id="tb_type">
+                                        <select class="form-control" id="tb-logging-interval">
                                             <option value="0">10 Minutes</option>
                                             <option value="1">30 Minutes</option>
                                             <option value="2">1 Hour</option>
@@ -102,21 +102,34 @@
                                         </select>
                                     </div>
 
+
+                                    <div class="form-group">
+                                        <label for="tb_type">Accelerometer Sampling Duration:</label>
+                                        <select class="form-control" id="tb-sampling-duration">
+                                            <option value="0">1 Minute</option>
+                                            <option value="1">5 Minutes</option>
+                                            <option value="2">10 Minutes</option>
+                                            <option value="3">15 Minutes</option>
+                                            <option value="4">20 Minutes</option>
+                                            <option value="5">30 Minutes</option>
+                                        </select>
+                                    </div>
+
                                     <div class="form-group">
                                         <h3 for="tb_topic" class="label-center">Minimum Frequency Trigger (Hz):</h3>
-                                        <h1 id="freq-slider-value" class="label-center">5.0</h1>
-                                        <input type="range" class="slider" min="0.0" max="50.0" step="0.01" value="0.1" id="freq-floating-slider">    
+                                        <h1 id="freq-slider-value" class="label-center">0.1</h1>
+                                        <input type="range" class="slider" min="0.0" max="50.0" step="0.1" value="0.1" id="freq-floating-slider">    
                                     </div>
 
                                     <div class="form-group">
                                         <h3 for="tb_topic" class="label-center">Minimum Acceleration Trigger (mG):</h3>
-                                        <h1 id="acc-slider-value" class="label-center">5.0</h1>
+                                        <h1 id="acc-slider-value" class="label-center">1</h1>
                                         <input type="range" class="slider" min="1" max="4000" step="1" value="1" id="acc-floating-slider">    
                                     </div>
                                 </form>
                             </div>
                             <div class="modal-footer">
-                                <button type="button" class="btn btn-primary" id="btn-save">Save changes</button>
+                                <button type="button" class="btn btn-primary" id="btn-save">Save Config</button>
                             </div>
                         </div>
                     </div>
@@ -124,25 +137,5 @@
             </div>
         </div>
     </body>
-    <script>
-        // JavaScript to update the displayed value as the slider is moved
-        const baseUrl = window.location.protocol + "//" + window.location.host;
-
-        const freq_slider = document.getElementById("freq-floating-slider");
-        const freq_output = document.getElementById("freq-slider-value");
-
-        const acc_slider = document.getElementById("acc-floating-slider");
-        const acc_output = document.getElementById("acc-slider-value");
-
-        document.getElementById("url-device").href=baseUrl+'/devices';
-        document.getElementById("url-config").href=baseUrl+'/config';
-
-        freq_slider.addEventListener("input", function () {
-           freq_output.textContent = freq_slider.value;
-        });
-
-        acc_slider.addEventListener("input", function () {
-           acc_output.textContent = acc_slider.value;
-        });
-    </script>
+    <script src="/js/setup_page.js"></script>
 </html>

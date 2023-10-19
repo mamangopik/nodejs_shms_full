@@ -26,6 +26,44 @@
             .container-fluid {
                 height: 100%;
             }
+            /* Styles for the container */
+            .toggle-switch-container {
+                display: flex;
+                align-items: center;
+            }
+
+            /* Hide the default checkbox input */
+            .toggle-switch-container input[type="checkbox"] {
+                display: none;
+            }
+
+            /* Style the label as the toggle switch */
+            .toggle-switch {
+                width: 60px;
+                height: 30px;
+                background-color: #ccc;
+                border-radius: 15px;
+                position: relative;
+                cursor: pointer;
+            }
+
+            /* Style the switch handle */
+            .toggle-switch-handle {
+                width: 30px;
+                height: 30px;
+                border-radius: 50%;
+                background-color: #fff;
+                position: absolute;
+                top: 0;
+                transition: 0.3s;
+            }
+
+            /* Style the label text */
+            .toggle-switch-label {
+                margin-left: 10px;
+            }
+
+
         </style>
         <script src="/js/jquery.min.js"></script>
         <script src="/js/bootstrap3.min.js"></script>
@@ -62,6 +100,7 @@
                 </div>
             </div>
         </nav>
+
         <div class="container">
             <div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
                 <div class="modal-dialog" role="document">
@@ -78,10 +117,13 @@
                                     <label for="tb_name">Name:</label>
                                     <input type="text" class="form-control" id="tb_name">
                                 </div>
-                                <!-- <div class="form-group">
-                                    <label for="tb_type">Type:</label>
-                                    <input type="text" class="form-control" id="tb_type">
-                                </div> -->
+                                <div class="toggle-switch-container">
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" id="myToggle">
+                                        <div class="toggle-switch-handle"></div>
+                                    </label>
+                                    <span class="toggle-switch-label">Toggle</span>
+                                </div>
                                 <div class="form-group">
                                     <label for="tb_type">Type:</label>
                                     <select class="form-control" id="tb_type">

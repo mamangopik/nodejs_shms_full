@@ -1,8 +1,10 @@
 const tokenGenerator = require('uuid-token-generator');
 const { user_model } = require('../model/database');
+require
 
 class API_handler {
-    constructor(app,db) {
+    constructor(app,db,mqtt) {
+        this.mqtt=mqtt;
         app.post('/api/login_validator',async(req,res)=>{
             console.log(req.body);
             let username = req.body.username;
@@ -71,7 +73,7 @@ class API_handler {
             db.device_model.add_device(data).then((result,error)=>{
                 if(result){
                     let payload = {status:'success adding device'};
-                    add_topic_subscribe(data.topic);
+                    this.mqtt.add_topic_subscribe(data.topic);
                     res.json(payload);
                 }else{
                     res.json({status:'failed adding device'});
@@ -89,7 +91,7 @@ class API_handler {
                             old:topic_old[0].topic,
                             new:data.topic
                         };
-                        update_topic_subscribe(topics);
+                        this.mqtt.update_topic_subscribe(topics);
                         res.json(payload);
                     }else{
                         res.json({status:'failed updating device'});
@@ -101,7 +103,7 @@ class API_handler {
         app.post('/api/devices/remove',async (req,res)=>{
             let id = req.body.id;
             db.device_model.get_topic_by_id(id).then((data)=>{
-                remove_topic_subscribe(data[0].topic);
+                this.mqtt.remove_topic_subscribe(data[0].topic);
                 db.device_model.delete_device(id).then((result,error)=>{
                     if(result){
                         let payload = {status:'success removing device'};
@@ -111,6 +113,13 @@ class API_handler {
                     }
                 });
             })    
+        });
+
+        app.post('/api/monitoring/set_config',async(req,res)=>{
+
+        });
+        app.post('/api/monitoring/get_config',async(req,res)=>{
+
         });
 
         app.get('/get_acc', async (req, res) => {  
