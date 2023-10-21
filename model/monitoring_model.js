@@ -10,15 +10,15 @@ class Monitoring_model{
         const [result] = await this.pool.query(query);
     }
 
-    updateConfig = async (id, updatedData) => {
+    updateConfig = async (updatedData) => {
         const query = `UPDATE monitoring_config 
-                      SET cloud_addr = '${updatedData.addr}', 
+                      SET cloud_addr = '${updatedData.cloud_address}', 
                           token = '${updatedData.token}', 
                           log_interval = ${updatedData.log_interval}, 
                           sampling_duration = ${updatedData.sampling_duration}, 
                           freq_thres = ${updatedData.freq_thres}, 
                           acc_thres = ${updatedData.acc_thres} 
-                      WHERE id = ${id};`;
+                      WHERE id = 0;`;
         
         const [result] = await this.pool.query(query);
     }
@@ -28,8 +28,8 @@ class Monitoring_model{
         const [result] = await this.pool.query(query);
     }
 
-    getConfig = async (id) => {
-        const query = `SELECT * FROM monitoring_config WHERE id = ${id};`;
+    getConfig = async () => {
+        const query = `SELECT * FROM monitoring_config WHERE id = 0;`;
         const [result] = await this.pool.query(query);
         return result[0]; // Assuming it returns a single record
     }  

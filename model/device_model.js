@@ -27,8 +27,9 @@ class Device_model{
     
       update_device = async (payload) => {
         try {
+          console.log({"payload":payload})
           const query = `UPDATE nodes
-                         SET type = '${payload.type}', name = '${payload.name}', topic = '${payload.topic}'
+                         SET type = '${payload.type}', name = '${payload.name}', topic = '${payload.topic}' ,log_raw = '${payload.log_raw}'
                          WHERE id = '${payload.id}';`;
           const [result] = await this.pool.query(query);
           if (result.affectedRows > 0) {

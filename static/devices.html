@@ -58,10 +58,6 @@
                 transition: 0.3s;
             }
 
-            /* Style the label text */
-            .toggle-switch-label {
-                margin-left: 10px;
-            }
 
 
         </style>
@@ -117,12 +113,15 @@
                                     <label for="tb_name">Name:</label>
                                     <input type="text" class="form-control" id="tb_name">
                                 </div>
-                                <div class="toggle-switch-container">
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" id="myToggle">
-                                        <div class="toggle-switch-handle"></div>
-                                    </label>
-                                    <span class="toggle-switch-label">Toggle</span>
+                                <div class="row" id="acc-toggle-switch" style="margin-left: 10px;">
+                                    <label id="toggle-switch-label">Log Raw Data (For Load Test)</label>
+                                    <div class="toggle-switch-container">  
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" id="myToggle">
+                                            <div class="toggle-switch-handle"></div>
+                                        </label>
+                                    </div>
+                                    <br>
                                 </div>
                                 <div class="form-group">
                                     <label for="tb_type">Type:</label>

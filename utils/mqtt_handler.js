@@ -4,6 +4,7 @@ const mqtt = require('mqtt')
 //global variable for acc_data
 var acc_data = {}
 var single_data = {}
+var nodes_log_raw = {};
 
 
 class Mqtt_handler{
@@ -31,6 +32,7 @@ class Mqtt_handler{
             this.db.device_model.get_devices().then((results)=>{
                 results.forEach(device => {
                     this.client.subscribe([device.topic], () => {
+                        nodes_log_raw[device.topic]=device.log_raw;
                         console.log(`Subscribe to topic '${device.topic}'`);
                         this.client.publish(device.topic, ' ', { qos: 0, retain: false });
                     })
@@ -59,10 +61,7 @@ class Mqtt_handler{
                         let time_to_push = time_data_in-((data_len-i)*0.005); //for 5ms sampling delay (200Hz)
                         obj.time_data.push(time_to_push);
                     }
-                    this.db.logger_model.log_data(obj).then(()=>{
-                        console.log("data logged to local DB");    
-                    });
-                    this.update_acc_data(unparsed_topic,payload,obj.time_data)
+                    this.update_acc_data(unparsed_topic,payload,obj.time_data,obj)
                 }
         
                 if(payload['sensor_type']=='single_data'){
@@ -95,6 +94,18 @@ class Mqtt_handler{
                 console.log(`Unsubscribed from topic: ${topics.old}`);
                 this.client.subscribe([topics.new], () => {
                     console.log(`Subscribe to topic '${topics.new}'`);
+                });
+                this.db.device_model.get_devices().then((results)=>{
+                    results.forEach(device => {
+                        this.client.subscribe([device.topic], () => {
+                            nodes_log_raw[device.topic]=device.log_raw;
+                            if(device.log_raw==1){
+                                console.log(`raw data log enabled for ${device.name}`);
+                            }else{
+                                console.log(`raw data log disabled for ${device.name}`);
+                            }
+                        })
+                    });
                 });
               } else {
                 console.error(`Error unsubscribing from topic`);
@@ -129,7 +140,10 @@ class Mqtt_handler{
         }
     }
 
-    update_acc_data = async (topic,payload,time_data)=>{
+    update_acc_data = async (topic,payload,time_data,data_to_log)=>{
+        if(nodes_log_raw[topic]==1){
+            this.db.logger_model.log_data(data_to_log);
+        }
         acc_data[topic]={};
         acc_data[topic] = payload;
         acc_data[topic].timestamp = time_data;

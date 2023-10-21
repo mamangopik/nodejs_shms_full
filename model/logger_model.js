@@ -35,7 +35,7 @@ class Logger_model{
         const timestamp_data = JSON.stringify(payload.time_data);
         const query = `INSERT INTO data_log (unix_timestamp, json, node, time_data)
                          VALUES (${parseInt(payload.timestamp)},'${meassurement_data}','${payload.node}','${timestamp_data}'); `;
-        console.log(payload);
+        // console.log(payload);
         const result = await this.pool.query(query);
         console.log('data logged');
         return 1;

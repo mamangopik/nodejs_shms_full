@@ -9,8 +9,8 @@ const Database = require('./model/database');
 const db = new Database(db_host, db_user, db_pwd, db_name);
 
 const cors = require('cors');
-const cookieParser = require('cookie-parser');
 const express = require('express');
+const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
 const { start } = require('repl');
 
@@ -18,6 +18,9 @@ const app = express();
 const path = require('path')
 
 app.use(express.static(path.join(__dirname, 'assets')));
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(cookieParser());
 // alloc CORS untuk API
 app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -26,9 +29,7 @@ app.use((req, res, next) => {
     next();
 });
 // Parse JSON and URL-encoded bodies untuk http POST
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(cookieParser());
+
 
 app.all('/', function (request, response, next) {
     response.header("Access-Control-Allow-Origin", "*");

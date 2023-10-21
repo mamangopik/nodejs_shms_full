@@ -26,6 +26,8 @@ var delete_buttons = [];
 var mode = 'add';
 var update_id = '';
 
+var log_raw_data_buf = 0;
+
 const baseUrl = window.location.protocol + "//" + window.location.host;
 
 const replaceSpecialCharsWithHyphen = (inputString) => {
@@ -73,6 +75,7 @@ const update_device = (id) => {
 		type: tb_type.value,
 		name: tb_name.value,
 		topic: replaceSpecialCharsWithHyphen(tb_topic.value),
+		log_raw : log_raw_data_buf,
         id:id
 	};
 	if (jsonData.type.length > 0 && jsonData.topic.length > 0 && jsonData.name.length > 0) {
@@ -202,6 +205,19 @@ const draw_node_list = () => {
 						tb_name.value = edit_prop.name[index];
 						tb_type.value = edit_prop.type[index];
 						tb_topic.value = edit_prop.topic[index];
+						log_raw_data_buf = edit_prop.log_raw[index];
+						toggleSwitch.addEventListener("change", () => {
+							if (toggleSwitch.checked) {
+								log_raw_data_buf = 1;
+							} else {
+								log_raw_data_buf = 0;
+							}
+						});
+						if(edit_prop.type[index]=="accelerometer"){
+							document.getElementById("acc-toggle-switch").style.display='inline-block';
+						}else{
+							document.getElementById("acc-toggle-switch").style.display='none';
+						}
 
 						if(edit_prop.log_raw[index]==1){
 							toggleSwitch.checked = true;
@@ -285,7 +301,3 @@ toggleSwitch.addEventListener("change", () => {
         console.log("Switch is off");
     }
 });
-
-// setInterval(()=>{
-//     document.getElementById('btn-cancel').click();
-// },100);

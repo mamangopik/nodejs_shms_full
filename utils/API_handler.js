@@ -1,6 +1,5 @@
 const tokenGenerator = require('uuid-token-generator');
 const { user_model } = require('../model/database');
-require
 
 class API_handler {
     constructor(app,db,mqtt) {
@@ -14,7 +13,7 @@ class API_handler {
             if (validated.status){
                 let opt = { 
                         maxAge: 2.628e+9
-                    };
+                    };  
                 res.cookie('login_info',validated.uid, opt);
                 let payload={
                     status:"OK",
@@ -83,6 +82,7 @@ class API_handler {
 
         app.post('/api/devices/update',(req,res)=>{
             let data = req.body;
+            console.log(data);
             db.device_model.get_topic_by_id(data.id).then((topic_old)=>{
                 db.device_model.update_device(data).then((result,error)=>{
                     if(result){
@@ -116,10 +116,14 @@ class API_handler {
         });
 
         app.post('/api/monitoring/set_config',async(req,res)=>{
-
+            db.monitoring_model.updateConfig(req.body);
+            res.json(req.body);
         });
-        app.post('/api/monitoring/get_config',async(req,res)=>{
-
+        app.get('/api/monitoring/get_config',async(req,res)=>{
+            db.monitoring_model.getConfig()
+            .then((result)=>{
+                res.json({"data":result});
+            })
         });
 
         app.get('/get_acc', async (req, res) => {  
