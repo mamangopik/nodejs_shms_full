@@ -140,6 +140,10 @@ class Mqtt_handler{
         }
     }
 
+    update_acc_data_stream = async (payload)=>{
+        this.io.local.emit("accelerometer_stream",payload);
+    }
+
     update_acc_data = async (topic,payload,time_data,data_to_log)=>{
         if(nodes_log_raw[topic]==1){
             this.db.logger_model.log_data(data_to_log);
@@ -147,6 +151,13 @@ class Mqtt_handler{
         acc_data[topic]={};
         acc_data[topic] = payload;
         acc_data[topic].timestamp = time_data;
+        payload = {
+            topic:topic,
+            data:acc_data[topic]
+        }
+        this.update_acc_data_stream(payload);
+
+
         this.io.local.emit(topic,acc_data[topic]);
     }
     
