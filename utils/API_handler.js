@@ -58,6 +58,12 @@ class API_handler {
             }
         });
 
+        app.get('/api/recorded_nodes',(req,res)=>{
+            db.logger_model.get_nodes()
+            .then((payload)=>{
+                res.json(payload);
+            })
+        })
 
         app.get('/api/devices',async(req,res)=>{
             db.device_model.get_devices().then((result)=>{
@@ -147,43 +153,13 @@ class API_handler {
             db.logger_model.get_data_bundle(node,unix,limit,offset).then((result)=>{
                 result.forEach(element => {
                     json_string.push(element.json);
-                    time_data_string.push(element.time_data)
+                    time_data_string.push(element.time_data);
                 });
 
-
-                let time_data_buff=[]
-                let x_buff=[]
-                let y_buff=[]
-                let z_buff=[]
-
-                time_data_string.forEach(element => {
-                    time_data = JSON.parse(element);
-                    time_data.forEach(time_element => {
-                        time_data_buff.push(time_element);
-                    });
+                res.json({
+                    json:json_string,
+                    time_data:time_data_string
                 });
-
-                json_string.forEach(element => {
-                    json = JSON.parse(element);
-                    json.x_values.forEach(x => {
-                        x_buff.push(x)
-                    });
-
-                    json.y_values.forEach(y => {
-                        y_buff.push(y)
-                    });
-
-                    json.z_values.forEach(z => {
-                        z_buff.push(z)
-                    });
-                });
-
-                response.x=x_buff;
-                response.y=y_buff;
-                response.z=z_buff;
-                response.timestamp=time_data_buff;
-                response.count=response.z.length;
-
                 res.json(response);
             });
         });

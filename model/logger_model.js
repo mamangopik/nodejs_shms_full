@@ -15,7 +15,14 @@ class Logger_model{
       }
 
       get_nodes = async () => {
-        const [result] = await this.pool.query("SELECT DISTINCT node_name FROM acc_data_log");
+        // try {
+        //   const [result] = await this.pool.query("SELECT DISTINCT node_name FROM acc_data_log");
+        //   return result;
+        // } catch (error) {
+        //   const [result] = await this.pool.query("SELECT DISTINCT node FROM data_log");
+        //   return result;
+        // }
+        const [result] = await this.pool.query("SELECT DISTINCT node FROM data_log");
         return result;
       }
     
@@ -40,10 +47,12 @@ class Logger_model{
         console.log('data logged');
         return 1;
       }
-    
-      read_data_bundle = async (node, unix, limit, offset) => {
+     
+      get_data_bundle = async (node, unix, limit, offset) => {
         const query = `select * from data_log where node='${node}' and unix_timestamp>=${unix} limit ${limit} offset ${offset};`
+        // console.log(query)
         const [result] = await this.pool.query(query);
+        // console.log(result)
         return result;
       }
 }

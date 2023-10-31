@@ -5,6 +5,7 @@ const mqtt = require('mqtt')
 var acc_data = {}
 var single_data = {}
 var nodes_log_raw = {};
+var device_properties = {}
 
 
 class Mqtt_handler{
@@ -30,6 +31,7 @@ class Mqtt_handler{
 
         this.client.on('connect', () => {
             this.db.device_model.get_devices().then((results)=>{
+                this.update_device_properties();
                 results.forEach(device => {
                     this.client.subscribe([device.topic], () => {
                         nodes_log_raw[device.topic]=device.log_raw;
@@ -51,6 +53,7 @@ class Mqtt_handler{
                 let obj={};
                 payload = JSON.parse(payload);
                 if(payload['sensor_type']=='accelerometer'){
+                    console.log(payload['battery_voltage'])
                     let data_len = payload.x_values.length;
                     obj['node']=unparsed_topic;
                     obj['timestamp']=Math.floor(time_data_in);
@@ -86,6 +89,14 @@ class Mqtt_handler{
         })
     }
 
+    update_device_properties = async ()=>{
+        this.db.device_model.get_devices()
+        .then((results)=>{
+            device_properties = results;
+        });
+    }
+
+
     update_topic_subscribe = (topics) => {
         try {
             console.log(topics);
@@ -93,6 +104,7 @@ class Mqtt_handler{
               if (!unsubscribeErr) {
                 console.log(`Unsubscribed from topic: ${topics.old}`);
                 this.client.subscribe([topics.new], () => {
+                    this.update_device_properties();
                     console.log(`Subscribe to topic '${topics.new}'`);
                 });
                 this.db.device_model.get_devices().then((results)=>{
@@ -141,12 +153,28 @@ class Mqtt_handler{
     }
 
     update_acc_data_stream = async (payload)=>{
-        this.io.local.emit("accelerometer_stream",payload);
+        new Promise(()=>{
+            this.io.local.emit("accelerometer_stream",payload);
+        });
+        // this.io.local.emit("accelerometer_stream",payload);
+    }
+
+    log_acc_data = async (data_to_log) =>{
+        let topic = data_to_log.node;
+        let device_to_log = {};
+        device_properties.forEach(device=>{
+            if(device.topic==topic){
+                device_to_log=device;
+            }
+        })
+        data_to_log['node']=device_to_log.id
+        // console.log(device_to_log.topic,device_to_log.id);
+        this.db.logger_model.log_data(data_to_log);
     }
 
     update_acc_data = async (topic,payload,time_data,data_to_log)=>{
         if(nodes_log_raw[topic]==1){
-            this.db.logger_model.log_data(data_to_log);
+            this.log_acc_data(data_to_log);
         }
         acc_data[topic]={};
         acc_data[topic] = payload;
@@ -156,8 +184,6 @@ class Mqtt_handler{
             data:acc_data[topic]
         }
         this.update_acc_data_stream(payload);
-
-
         this.io.local.emit(topic,acc_data[topic]);
     }
     

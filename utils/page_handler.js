@@ -14,6 +14,11 @@ class Page_handler {
             res.sendFile(static_view);
         });
 
+        app.get('/history_graph',async(req,res)=>{
+            const static_view = view_path+'history_reader.html';
+            res.sendFile(static_view);
+        });
+
         app.get('/',async(req,res)=>{
             const static_view = view_path+'login.html';
             res.sendFile(static_view);

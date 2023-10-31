@@ -12,6 +12,16 @@ var btn_axis = {
     toggle_z:1
 }
 
+var peaks1_table = document.getElementsByClassName("peak-1-val-wrap");
+var peaks2_table = document.getElementsByClassName("peak-2-val-wrap");
+var peaks3_table = document.getElementsByClassName("peak-3-val-wrap");
+
+var peaks_table = {
+                    x:[peaks1_table[0],peaks2_table[0],peaks3_table[0]],
+                    y:[peaks1_table[1],peaks2_table[1],peaks3_table[1]],
+                    z:[peaks1_table[2],peaks2_table[2],peaks3_table[2]]
+                  };
+
 // GLOBAL
 var acc_data={
     x:[],
@@ -28,7 +38,7 @@ var acc_to_send_status = 0;
 var indeks = 0;
 var step = 2048;
 var last_length = 0;
-var fft_plot_heigh = 250;
+var fft_plot_heigh = 200;
 
 const toolbar = {
     modeBarButtonsToRemove: ['autoScale2d']
@@ -40,16 +50,22 @@ const hide_toolbar = {
   };
 
 var layout = {
-    height: 500,
+    height: 300,
     autosize: true,
-    title: 'Data Time Domain VIBRASi',
     yaxis: {
         title: 'Acc',
     },
     xaxis: {
         title: 'Waktu'
     },
-    showlegend: true
+    showlegend: true,
+    margin: { // Set the margin to zero
+        l: 50,
+        r: 0,
+        t: 0,
+        b: 50,
+        pad: 0
+    }
 };
 
 var layout_fft={
@@ -64,10 +80,10 @@ var layout_fft={
         annotations: [],
         showlegend: true,
         margin: { // Set the margin to zero
-            l: 20,
+            l: 50,
             r: 0,
             t: 0,
-            b: 100,
+            b: 50,
             pad: 0
         }
     },
@@ -82,10 +98,10 @@ var layout_fft={
         annotations: [],
         showlegend: true,
         margin: { // Set the margin to zero
-            l: 20,
+            l: 50,
             r: 0,
             t: 0,
-            b: 100,
+            b: 50,
             pad: 0
         }
     },
@@ -100,10 +116,10 @@ var layout_fft={
         annotations: [],
         showlegend: true,
         margin: { // Set the margin to zero
-            l: 20,
+            l: 50,
             r: 0,
             t: 0,
-            b: 100,
+            b: 50,
             pad: 0
         }
     }
@@ -120,10 +136,10 @@ var layout_history = {
     },
     showlegend: true,
     margin: { // Set the margin to zero
-        l: 0,
+        l: 50,
         r: 0,
         t: 0,
-        b: 0,
+        b: 50,
         pad: 0
       },
 };
@@ -182,6 +198,11 @@ const get_peak_label = (x,y,index)=>{
                 `</b>`
     return html;
 }
+
+// const draw_peak_table = async()=>{
+//     peaks_table.x[i-1].innerHTML = `${parseFloat(peak[0]).toFixed(4)}Hz, ${parseFloat(peak[1]).toFixed(4)}mG`;
+// }
+
 
 const draw_fft = async (div,layout,data,peaks)=>{
     let i=1;
@@ -283,7 +304,7 @@ const draw_acc = async (data)=>{
 
         if(acc_data.x.length!==last_length  && autoscroll_status == 1){
             if (acc_data.x.length > step) {
-                indeks+=128;
+                indeks+=512;
                 acc_to_send['x']=xTrace.y;
                 acc_to_send['y']=yTrace.y;
                 acc_to_send['z']=zTrace.y;
@@ -376,18 +397,33 @@ function connect() {
         if(btn_axis.toggle_x==1) {
             document.getElementById('fft_graph_x').style.display='inline-block';
              draw_fft('fft_graph_x',layout_fft.x,fft_x,data.peaks.x);
+             new Promise(()=>{
+                peaks_table.x[0].innerHTML = `${parseFloat(data.peaks.x[0][0]).toFixed(4)}Hz, ${parseFloat(data.peaks.x[0][1]).toFixed(4)}mG`;
+                peaks_table.x[1].innerHTML = `${parseFloat(data.peaks.x[1][0]).toFixed(4)}Hz, ${parseFloat(data.peaks.x[1][1]).toFixed(4)}mG`;
+                peaks_table.x[2].innerHTML = `${parseFloat(data.peaks.x[2][0]).toFixed(4)}Hz, ${parseFloat(data.peaks.x[2][1]).toFixed(4)}mG`;
+             });
         }else{
             document.getElementById('fft_graph_x').style.display='none';
         }
         if(btn_axis.toggle_y==1) {
             document.getElementById('fft_graph_y').style.display='inline-block';
              draw_fft('fft_graph_y',layout_fft.y,fft_y,data.peaks.y);
+             new Promise(()=>{
+                peaks_table.y[0].innerHTML = `${parseFloat(data.peaks.y[0][0]).toFixed(4)}Hz, ${parseFloat(data.peaks.y[0][1]).toFixed(4)}mG`;
+                peaks_table.y[1].innerHTML = `${parseFloat(data.peaks.y[1][0]).toFixed(4)}Hz, ${parseFloat(data.peaks.y[1][1]).toFixed(4)}mG`;
+                peaks_table.y[2].innerHTML = `${parseFloat(data.peaks.y[2][0]).toFixed(4)}Hz, ${parseFloat(data.peaks.y[2][1]).toFixed(4)}mG`;
+             });
         }else{
             document.getElementById('fft_graph_y').style.display='none';
         }
         if(btn_axis.toggle_z==1) {
             document.getElementById('fft_graph_z').style.display='inline-block';
-             draw_fft('fft_graph_z',layout_fft.z,fft_z,data.peaks.z);
+            draw_fft('fft_graph_z',layout_fft.z,fft_z,data.peaks.z);
+            new Promise(()=>{
+                peaks_table.z[0].innerHTML = `${parseFloat(data.peaks.z[0][0]).toFixed(4)}Hz, ${parseFloat(data.peaks.z[0][1]).toFixed(4)}mG`;
+                peaks_table.z[1].innerHTML = `${parseFloat(data.peaks.z[1][0]).toFixed(4)}Hz, ${parseFloat(data.peaks.z[1][1]).toFixed(4)}mG`;
+                peaks_table.z[2].innerHTML = `${parseFloat(data.peaks.z[2][0]).toFixed(4)}Hz, ${parseFloat(data.peaks.z[2][1]).toFixed(4)}mG`;
+             });
         }else{
             document.getElementById('fft_graph_z').style.display='none';
         }

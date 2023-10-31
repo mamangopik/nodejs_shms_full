@@ -16,13 +16,25 @@
             display: flex;
             flex-direction: column;
             }
+            .fft-plot-wrap{
+                margin-top: 1%;
+
+            }
+            .table-peak{
+                font-weight: bold;
+            }
+            /* .custom-jumbotron{ */
+                /* background: linear-gradient(to bottom, #e08c0d, #e7b220); */ 
+                /* background: linear-gradient(to right, #2f332fd7, #0ad30a); */
+                /* background-color: #8dca69;
+            /* } */
         </style>
         <script src="/js/jquery.min.js"></script>
         <script src="/js/bootstrap3.min.js"></script>
     </head>
     <body>
         <!-- Modal -->
-        <div class="modal fade jumbotron" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal fade jumbotron custom-jumbotron" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
             <div class="container">
                 <div class="row">
                     <div class="col-md-6 col-md-offset-3">
@@ -50,7 +62,7 @@
                 </div>
             </div>
         </div>
-        <div class="container">
+        <div class="container-fluid">
             <div class="row">
                 <div class="col-md-12 text-center">
                     <h3>Realtime Graph</h3>
@@ -75,49 +87,90 @@
 
             <div class="row">   
                 <div class="col-md-12">
-                    <div id='acc_graph' style="border-radius: 5%;"></div>
+                    <div class="jumbotron custom-jumbotron">
+                        <h3>Time Domain <button class="btn btn-disable">></button></h3>
+                        <div id='acc_graph' style="border-radius: 5%;"></div>
+                    </div>
                 </div>
             </div>
 
-            <div class="row">
+            <div class="row">   
                 <div class="col-md-12">
-                    <div id='fft_graph_x' style="border-radius: 5%;"></div>
-                </div>
-            </div>
-            
-            <div class="row">
-                <div class="col-md-12">
-                    <div id='fft_graph_y' style="border-radius: 5%;"></div>
-                </div>
-            </div>
+                    <div class="jumbotron custom-jumbotron">
+                        <h3>Frequency Domain</h3>
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Peak</th>
+                                    <th>X Axis</th>
+                                    <th>Y Axis</th>
+                                    <th>Z Axis</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>1</td>
+                                    <td class="table-peak peak-1-val-wrap">----</td>
+                                    <td class="table-peak peak-1-val-wrap">----</td>
+                                    <td class="table-peak peak-1-val-wrap">----</td>
+                                </tr>
+                                <tr>
+                                    <td>2</td>
+                                    <td class="table-peak peak-2-val-wrap">----</td>
+                                    <td class="table-peak peak-2-val-wrap">----</td>
+                                    <td class="table-peak peak-2-val-wrap">----</td>
+                                </tr>
+                                <tr>
+                                    <td>3</td>
+                                    <td class="table-peak peak-3-val-wrap">----</td>
+                                    <td class="table-peak peak-3-val-wrap">----</td>
+                                    <td class="table-peak peak-3-val-wrap">----</td>
+                                </tr>
+                            </tbody>
+                        </table>
 
-            <div class="row">
-                <div class="col-md-12">
-                    <div id='fft_graph_z' style="border-radius: 5%;"></div>
+                        <div class="row">
+                            <div class="col-md-6 fft-plot-wrap">
+                                <div id='fft_graph_x' style="border-radius: 5%;"></div>
+                            </div>
+                            <div class="col-md-6 fft-plot-wrap">
+                                <div id='fft_graph_y' style="border-radius: 5%;"></div>
+                            </div>
+                            <div class="col-md-6 fft-plot-wrap">
+                                <div id='fft_graph_z' style="border-radius: 5%;"></div>
+                            </div>
+                        </div>
+
+                        <!-- <div class="row">
+                            <div class="col-md-4 fft-plot-wrap">
+                                <div id='fft_graph_x' style="border-radius: 5%;"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-4 fft-plot-wrap">
+                                <div id='fft_graph_y' style="border-radius: 5%;"></div>
+                            </div>
+                        </div>
+            
+                        <div class="row">
+                            <div class="col-md-4 fft-plot-wrap">
+                                <div id='fft_graph_z' style="border-radius: 5%;"></div>
+                            </div>
+                        </div> -->
+
+                    </div>
                 </div>
             </div>
             
-            <div class="row">
+            <div class="row">   
                 <div class="col-md-12">
-                    <div id='acc_history' style="border-radius: 5%;"></div>
+                    <div class="jumbotron custom-jumbotron">
+                        <h3>Time Domain History<button class="btn btn-disable">></button></h3>
+                        <div id='acc_history' style="border-radius: 5%;"></div>
+                    </div>
                 </div>
             </div>
-            <!-- <div class="row">
-                <div class="col-md-3">
-                    <div class="jumbotron btn btn-warning">
-                        <h4 id="lbl-temperature">'C</h4>
-                    </div>
-                </div>
-            </div> -->
-            <!-- <div class="row">
-                <div class="col-md-2">
-                    <div class="jumbotron btn btn-warning">
-                        <h4 id="lbl-temperature">'C</h4>
-                    </div>
-                </div>
-                <div id='acc_history' class="col-md-10" style="border-radius: 5%;">
-                </div>
-            </div> -->
         </div>
     </body>
     <script src="/js/fft_ws_com.js"></script>
