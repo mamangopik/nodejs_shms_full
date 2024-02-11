@@ -22,47 +22,66 @@
             }
             .table-peak{
                 font-weight: bold;
+                font-size: small;
             }
-            /* .custom-jumbotron{ */
-                /* background: linear-gradient(to bottom, #e08c0d, #e7b220); */ 
-                /* background: linear-gradient(to right, #2f332fd7, #0ad30a); */
-                /* background-color: #8dca69;
-            /* } */
+            #peak-info-popup{
+                position: fixed; /* Fixed position for the popup */
+                top: 5%; /* Position at the top of the viewport */
+                left: 70%; /* Position at the left corner of the viewport */
+                z-index: 1; /* Ensure it appears above the main div content */
+                cursor: grab; /* Change cursor to indicate draggable element */
+            }
+            #plot-content{
+                position: absolute;
+                width: 100%;
+                height: 100%;
+                overflow: auto; /* Enable scrolling for the main div */
+            }
+            #table-sheet{
+                padding: 5%;
+                background-color: rgba(27, 136, 231, 0.416);
+            }
         </style>
         <script src="/js/jquery.min.js"></script>
         <script src="/js/bootstrap3.min.js"></script>
     </head>
     <body>
-        <!-- Modal -->
-        <div class="modal fade jumbotron custom-jumbotron" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
-            <div class="container">
-                <div class="row">
-                    <div class="col-md-6 col-md-offset-3">
-                        <h2 class="text-center">Settings</h2>
-                        <form>
-                            <div class="form-group">
-                                <label for="dropdown">Node name:</label>
-                                <div class="dropdown">
-                                    <button class="btn btn-primary dropdown-toggle" type="button" data-toggle="dropdown">Select an Option
-                                    <span class="caret"></span></button>
-                                    <ul class="dropdown-menu">
-                                      <li><a href="#">Option 1</a></li>
-                                    </ul>
-                                </div>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-
-                <div class="row">
-                    <div class="col-md-10 col-lg-10">
-                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                        <button type="button" class="btn btn-primary">Save changes</button>
-                    </div>
-                </div>
+        <div class="container-fluid" id="peak-info-popup">
+            <div id="table-sheet">
+                <h3>Peaks</h3>
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Peak</th>
+                            <th>X Axis</th>
+                            <th>Y Axis</th>
+                            <th>Z Axis</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>1</td>
+                            <td class="table-peak peak-1-val-wrap">----</td>
+                            <td class="table-peak peak-1-val-wrap">----</td>
+                            <td class="table-peak peak-1-val-wrap">----</td>
+                        </tr>
+                        <tr>
+                            <td>2</td>
+                            <td class="table-peak peak-2-val-wrap">----</td>
+                            <td class="table-peak peak-2-val-wrap">----</td>
+                            <td class="table-peak peak-2-val-wrap">----</td>
+                        </tr>
+                        <tr>
+                            <td>3</td>
+                            <td class="table-peak peak-3-val-wrap">----</td>
+                            <td class="table-peak peak-3-val-wrap">----</td>
+                            <td class="table-peak peak-3-val-wrap">----</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
-        <div class="container-fluid">
+        <div class="container-fluid" id="plot-content">
             <div class="row">
                 <div class="col-md-12 text-center">
                     <h3>Realtime Graph</h3>
@@ -78,10 +97,6 @@
                     <button id="btn-y" class="btn btn-primary btn-md" type="button">Y</button>
                     <button id="btn-z" class="btn btn-primary btn-md" type="button">Z</button>
                     <button id="btn-download" class="btn btn-success" type="button">Download History</button>
-                    <!-- Button trigger modal -->
-                    <!-- <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#exampleModal">
-                        Settings
-                    </button> -->
                 </div>
             </div>
 
@@ -98,37 +113,6 @@
                 <div class="col-md-12">
                     <div class="jumbotron custom-jumbotron">
                         <h3>Frequency Domain</h3>
-                        <table class="table table-bordered">
-                            <thead>
-                                <tr>
-                                    <th>Peak</th>
-                                    <th>X Axis</th>
-                                    <th>Y Axis</th>
-                                    <th>Z Axis</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>1</td>
-                                    <td class="table-peak peak-1-val-wrap">----</td>
-                                    <td class="table-peak peak-1-val-wrap">----</td>
-                                    <td class="table-peak peak-1-val-wrap">----</td>
-                                </tr>
-                                <tr>
-                                    <td>2</td>
-                                    <td class="table-peak peak-2-val-wrap">----</td>
-                                    <td class="table-peak peak-2-val-wrap">----</td>
-                                    <td class="table-peak peak-2-val-wrap">----</td>
-                                </tr>
-                                <tr>
-                                    <td>3</td>
-                                    <td class="table-peak peak-3-val-wrap">----</td>
-                                    <td class="table-peak peak-3-val-wrap">----</td>
-                                    <td class="table-peak peak-3-val-wrap">----</td>
-                                </tr>
-                            </tbody>
-                        </table>
-
                         <div class="row">
                             <div class="col-md-6 fft-plot-wrap">
                                 <div id='fft_graph_x' style="border-radius: 5%;"></div>
@@ -140,25 +124,6 @@
                                 <div id='fft_graph_z' style="border-radius: 5%;"></div>
                             </div>
                         </div>
-
-                        <!-- <div class="row">
-                            <div class="col-md-4 fft-plot-wrap">
-                                <div id='fft_graph_x' style="border-radius: 5%;"></div>
-                            </div>
-                        </div>
-                        
-                        <div class="row">
-                            <div class="col-md-4 fft-plot-wrap">
-                                <div id='fft_graph_y' style="border-radius: 5%;"></div>
-                            </div>
-                        </div>
-            
-                        <div class="row">
-                            <div class="col-md-4 fft-plot-wrap">
-                                <div id='fft_graph_z' style="border-radius: 5%;"></div>
-                            </div>
-                        </div> -->
-
                     </div>
                 </div>
             </div>
@@ -193,8 +158,6 @@
 	    	type: 'scatter',
 	    	name: 'x',
 	    };
-	    // Plotly.newPlot('acc_graph', [x,y,z], layout, toolbar);
-        // Plotly.newPlot('acc_history', [x,y,z], layout);
 
         var fft_x = {
 	    	y: [],

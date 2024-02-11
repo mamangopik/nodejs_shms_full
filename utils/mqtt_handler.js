@@ -47,11 +47,14 @@ class Mqtt_handler{
             topic = topic.replace('/shms/','');
             topic = topic.replace('/accelerometer','');
             payload = payload.toString();
+            // console.log("===============================");
             // console.log(payload);
+            // console.log("===============================");
             try {
                 let time_data_in = (new Date().getTime() / 1000);
                 let obj={};
                 payload = JSON.parse(payload);
+                console.log(payload['sensor_type'])
                 if(payload['sensor_type']=='accelerometer'){
                     console.log(payload['battery_voltage'])
                     let data_len = payload.x_values.length;
