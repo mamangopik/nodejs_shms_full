@@ -39,7 +39,7 @@ var python_ws_addr = 'ws://' + window.location.host.replace(':7777', ':5556');
 var acc_to_send = {};
 var acc_to_send_status = 0;
 var indeks = 0;
-var window_area = 1024;
+var window_area = 1024 * 4;
 var window_size = window_area;
 var last_length = 0;
 var fft_plot_heigh = 200;
@@ -206,10 +206,6 @@ const get_peak_label = (x, y, index) => {
     return html;
 }
 
-// const draw_peak_table = async()=>{
-//     peaks_table.x[i-1].innerHTML = `${parseFloat(peak[0]).toFixed(4)}Hz, ${parseFloat(peak[1]).toFixed(4)}mG`;
-// }
-
 
 const draw_fft = async (div, layout, data, peaks) => {
     let i = 1;
@@ -233,7 +229,7 @@ const draw_fft = async (div, layout, data, peaks) => {
             borderwidth: 2,
             borderpad: 4,
             bgcolor: data.line.color,
-            opacity: 0.8
+            opacity: 0.7
         };
         layout.annotations.push(annotation);
         i++;
@@ -376,7 +372,7 @@ function connect() {
 
         if (btn_axis.toggle_x == 1) {
             document.getElementById('fft_graph_x').style.display = 'inline';
-            draw_fft('fft_graph_x', layout_fft.x, fft_x, data.peaks.x);
+            await draw_fft('fft_graph_x', layout_fft.x, fft_x, data.peaks.x);
             new Promise(() => {
                 peaks_table.x[0].innerHTML = `${parseFloat(data.peaks.x[0][0]).toFixed(4)}Hz, ${parseFloat(data.peaks.x[0][1]).toFixed(4)}mG`;
                 peaks_table.x[1].innerHTML = `${parseFloat(data.peaks.x[1][0]).toFixed(4)}Hz, ${parseFloat(data.peaks.x[1][1]).toFixed(4)}mG`;
@@ -387,7 +383,7 @@ function connect() {
         }
         if (btn_axis.toggle_y == 1) {
             document.getElementById('fft_graph_y').style.display = 'inline';
-            draw_fft('fft_graph_y', layout_fft.y, fft_y, data.peaks.y);
+            await draw_fft('fft_graph_y', layout_fft.y, fft_y, data.peaks.y);
             new Promise(() => {
                 peaks_table.y[0].innerHTML = `${parseFloat(data.peaks.y[0][0]).toFixed(4)}Hz, ${parseFloat(data.peaks.y[0][1]).toFixed(4)}mG`;
                 peaks_table.y[1].innerHTML = `${parseFloat(data.peaks.y[1][0]).toFixed(4)}Hz, ${parseFloat(data.peaks.y[1][1]).toFixed(4)}mG`;
@@ -398,7 +394,7 @@ function connect() {
         }
         if (btn_axis.toggle_z == 1) {
             document.getElementById('fft_graph_z').style.display = 'inline';
-            draw_fft('fft_graph_z', layout_fft.z, fft_z, data.peaks.z);
+            await draw_fft('fft_graph_z', layout_fft.z, fft_z, data.peaks.z);
             new Promise(() => {
                 peaks_table.z[0].innerHTML = `${parseFloat(data.peaks.z[0][0]).toFixed(4)}Hz, ${parseFloat(data.peaks.z[0][1]).toFixed(4)}mG`;
                 peaks_table.z[1].innerHTML = `${parseFloat(data.peaks.z[1][0]).toFixed(4)}Hz, ${parseFloat(data.peaks.z[1][1]).toFixed(4)}mG`;
@@ -551,18 +547,17 @@ const animate_acc = async (index) => {
         };
         var plotData = [];
 
-        if (autoscroll_status == 1) {
-            if (zTrace.y.length >= window_size) {
-                if (btn_axis.toggle_x == 1) plotData.push(xTrace);
-                if (btn_axis.toggle_y == 1) plotData.push(yTrace);
-                if (btn_axis.toggle_z == 1) plotData.push(zTrace);
-                acc_to_send['x'] = xTrace.y;
-                acc_to_send['y'] = yTrace.y;
-                acc_to_send['z'] = zTrace.y;
-                acc_to_send['peaks_req'] = 3;
-                acc_to_send_status = 1;
-                Plotly.newPlot('acc_graph', plotData);
-            }
+        // if (autoscroll_status == 1) {
+        if (btn_axis.toggle_x == 1) plotData.push(xTrace);
+        if (btn_axis.toggle_y == 1) plotData.push(yTrace);
+        if (btn_axis.toggle_z == 1) plotData.push(zTrace);
+        acc_to_send['x'] = xTrace.y;
+        acc_to_send['y'] = yTrace.y;
+        acc_to_send['z'] = zTrace.y;
+        acc_to_send['peaks_req'] = 3;
+        acc_to_send_status = 1;
+        Plotly.newPlot('acc_graph', plotData, layout);
+        if (zTrace.y.length >= window_size) {
             let delta = acc_data.timestamp.length - animation_pointer;
             let SP = parseInt(window_size)
             if (delta > SP) {
@@ -572,6 +567,7 @@ const animate_acc = async (index) => {
                 animation_pointer += 1;
             }
         }
+        // }
     } catch (error) {
         console.error('something error:', error);
     }
@@ -579,7 +575,10 @@ const animate_acc = async (index) => {
 
 
 setInterval(() => {
-    if (acc_data.x.length > animation_pointer && (acc_data.x.length) > (window_size)) {
+    // if (acc_data.x.length > animation_pointer && (acc_data.x.length) > (window_size)) {
+    //     animate_acc(animation_pointer);
+    // }
+    if (acc_data.x.length > animation_pointer) {
         animate_acc(animation_pointer);
     }
 }, 50);
