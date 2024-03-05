@@ -74,7 +74,7 @@ class Mqtt_handler {
 
                     obj['time_data'] = [];
                     for (let i = 0; i < data_len; i++) {
-                        let time_to_push = time_data_in - ((data_len - i) * 0.005); //for 5ms sampling delay (200Hz)
+                        let time_to_push = time_data_in - ((data_len - i) * 0.02); //for 5ms sampling delay (200Hz)
                         obj.time_data.push(time_to_push);
                     }
                     this.update_acc_data(unparsed_topic, payload, obj.time_data, obj)

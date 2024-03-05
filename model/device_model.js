@@ -43,6 +43,11 @@ class Device_model {
     }
   }
 
+  get_device_list = async () => {
+    const query = "select id,name from nodes";
+    const [result] = await this.pool.query(query);
+    return result;
+  }
   device_has_table = async (id) => {
     const query = `
     SELECT COUNT(*) as table_count

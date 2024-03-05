@@ -31,6 +31,8 @@ var acc_data = {
     z: [],
     timestamp: []
 }
+var RSSI = 0;
+var v_batt = 0;
 var packet_length = 64;
 const urlParams = new URLSearchParams(window.location.search);
 const topic = urlParams.get('topic');
@@ -241,6 +243,8 @@ const draw_fft = async (div, layout, data, peaks) => {
 }
 
 const push_acc_data = async (data) => {
+    RSSI = data.signal_strength;
+    v_batt = data.battery_voltage;
     if (data.x_values) {
         data.x_values.forEach(x => {
             acc_data.x.push(parseFloat(x));
@@ -428,6 +432,7 @@ socket_io.on(topic, async (data) => {
     data_acc = data;
     if (data_acc.x_values) {
         push_acc_data(data_acc);
+        console.log(data_acc);
         // draw_acc();
     }
 });
@@ -443,7 +448,7 @@ let history_beacon = setInterval(async () => {
 
 const draw_acc = async () => {
     try {
-        recorded_lbl.innerHTML = `Recorded data: ${acc_data.x.length}, Data in plot: ${0 + indeks} to ${window_area + indeks}`;
+        recorded_lbl.innerHTML = `Recorded data: ${acc_data.x.length}, Data in plot: ${0 + indeks} to ${window_area + indeks}</br>aa`;
         var xTrace = {
             y: acc_data.x.slice(0 + indeks, window_area + indeks),
             text: acc_data.timestamp.slice(0 + indeks, window_area + indeks),
@@ -505,7 +510,10 @@ let animation_pointer = 0;
 
 const update_recv_data_info = async (index) => {
     try {
-        recorded_lbl.innerHTML = `Recorded data: ${acc_data.x.length}, Data in plot: ${0 + indeks} to ${window_area + indeks}`;
+        recorded_lbl.innerHTML = `Recorded data: ${acc_data.x.length},
+         Data in plot: ${0 + indeks} to ${window_area + indeks}</br>
+        RSSI: <b>${RSSI}dB</b>, Battery Voltage: <b>${v_batt}</b>
+        `;
     } catch (error) {
         console.error(error);
     }

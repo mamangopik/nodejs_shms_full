@@ -1,0 +1,442 @@
+<!--
+docs:
+*JS paho MQTT : https://stackoverflow.com/questions/70128563/mosquitto-and-simple-paho-js-client 
+*PlotlyJS get scroll event : https://www.bing.com/search?pglt=2083&q=plotly.js+get+zoom+events&cvid=8391f4c696544b6bbf5407b24ebf042f&gs_lcrp=EgZjaHJvbWUqBggAEEUYOzIGCAAQRRg7MgYIARBFGDsyBggCEEUYOTIGCAMQABhAMgYIBBAAGEAyBggFEEUYPDIGCAYQRRg8MgYIBxBFGDwyBggIEEUYPDIHCAkQRRj8VdIBCDEzNTlqMGoxqAIAsAIA&FORM=ANNAB1&PC=U531
+*PlotlyJS get viewed items in plot : https://community.plotly.com/t/get-data-for-current-zoomed-in-view/7092
+*Loading animation : https://blog.hubspot.com/website/css-loading-animation
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Access</title>
+    <!-- Bootstrap 3 CDN -->
+    <link rel="stylesheet" href="/css/bootstrap3.min.css">
+    <script src='/js/plotly.min.js'></script>
+    <script src="/js/paho-mqtt.min.js"></script>
+    <style>
+        bodY {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        .center {
+            top: 0;
+            z-index: 2;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #bbbbbb;
+        }
+
+        #content {
+            z-index: 0;
+            top: 0;
+        }
+
+        .wave {
+            width: 10px;
+            height: 150px;
+            background: linear-gradient(45deg, rgb(49, 153, 153), #ffffff);
+            margin: 10px;
+            animation: wave 1s linear infinite;
+            border-radius: 20px;
+        }
+
+        .wave:nth-child(2) {
+            animation-delay: 0.1s;
+        }
+
+        .wave:nth-child(3) {
+            animation-delay: 0.2s;
+        }
+
+        .wave:nth-child(4) {
+            animation-delay: 0.3s;
+        }
+
+        .wave:nth-child(5) {
+            animation-delay: 0.4s;
+        }
+
+        .wave:nth-child(6) {
+            animation-delay: 0.5s;
+        }
+
+        .wave:nth-child(7) {
+            animation-delay: 0.6s;
+        }
+
+        .wave:nth-child(8) {
+            animation-delay: 0.7s;
+        }
+
+        .wave:nth-child(9) {
+            animation-delay: 0.8s;
+        }
+
+        .wave:nth-child(10) {
+            animation-delay: 0.9s;
+        }
+
+        @keyframes wave {
+            0% {
+                transform: scale(0);
+            }
+
+            50% {
+                transform: scale(1);
+            }
+
+            100% {
+                transform: scale(0);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="center" id="loading-animation">
+        <div class="wave"></div>
+        <div class="wave"></div>
+        <div class="wave"></div>
+        <div class="wave"></div>
+        <div class="wave"></div>
+        <div class="wave"></div>
+        <div class="wave"></div>
+        <div class="wave"></div>
+        <div class="wave"></div>
+        <div class="wave"></div>
+    </div>
+    <div class="container-fluid" id="content">
+        <div class="row">
+            <h1 class="text-center">Acceleration Data</h1>
+        </div>
+        <div class="row">
+            <div class="col-md-12">
+                <button id="btn-download" class="btn btn-success" type="button">Download History</button>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-12">
+                <div id="plot"></div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-12">
+                <button id="btn-calculate" class="btn btn-primary" type="button">Calculate FFT</button>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-12">
+                <div id="fft_graph_x"></div>
+            </div>
+            <div class="col-md-12">
+                <div id="fft_graph_y"></div>
+            </div>
+            <div class="col-md-12">
+                <div id="fft_graph_z"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        var acc_to_send = {};
+        var acc_to_send_status = 0;
+        var download_ready = false;
+        const urlParams = new URLSearchParams(window.location.search);
+        const python_ws_addr = window.location.host.replace(':7777', '');
+        const device_id = urlParams.get('id');
+        const brokerUrl = python_ws_addr//'ws://192.168.15.54:9001';
+        const clientId = "mqtt_publisher_" + Math.random().toString(16).substr(2, 8);
+
+        console.log(brokerUrl, python_ws_addr)
+
+        var mqtt;
+        var reconnectTimeout = 2000;
+        var host = "brains.local";
+        var port = 9001;
+
+        function onConnect() {
+            console.log("Connected");
+            mqtt.subscribe("/shms/node_3/accelerometer");
+        }
+
+        function onMessageArrived(message) {
+            let mqtt_payload = {
+                'topic': message.destinationName,
+                message: message.payloadString
+            }
+            console.log(mqtt_payload);
+        }
+
+        console.log("Connecting to " + host + ":" + port);
+        mqtt = new Paho.MQTT.Client(host, port, clientId);
+        mqtt.onMessageArrived = onMessageArrived;
+        var options = {
+            timeout: 3,
+            onSuccess: onConnect,
+        };
+
+        mqtt.connect(options);
+
+        var acc_data = {
+            x: [], y: [], z: [], time_data: []
+        };
+        var timm = [];
+        var iterated_acc_data = [];
+        const loggingFrequency = 20;
+        let currentIndex = 0;
+
+        const calculateLostDataPoints = async (dataLog, loggingFrequency) => {
+            let lostDataPoints = 0;
+            for (let i = 1; i < dataLog.time_data.length; i++) {
+                const timeDiff = parseInt(dataLog.time_data[i]) - parseInt(dataLog.time_data[i - 1]);
+                const expectedDataPoints = Math.floor(timeDiff / loggingFrequency) - 1;
+                lostDataPoints += expectedDataPoints;
+            }
+            return lostDataPoints;
+        };
+
+        function date_to_unix(dateString) {
+            // Create a new Date object from the date string
+            const date = new Date(dateString);
+
+            // Get the Unix timestamp (in milliseconds)
+            const unixTimestamp = date.getTime();
+
+            // Convert milliseconds to seconds (Unix timestamp is typically in seconds)
+            const unixTimestampInSeconds = Math.floor(unixTimestamp);
+
+            return unixTimestampInSeconds;
+        }
+
+        const draw_acc = async (data) => {
+            download_ready = false;
+            const lostDataPoints = await calculateLostDataPoints(acc_data, loggingFrequency);
+            // console.log(lostDataPoints);
+            timedata = data.time_data;
+            t0 = 1698747809398;
+            timedata = [];
+            // console.log(data.time_data.length);
+            for (let i = 0; i < data.time_data.length; i++) {
+                ts = t0 + (20 * i);
+                timedata.push(new Date(ts));
+            }
+            // console.log("my data", acc_data.time_data.length);
+            // console.log("estimated data", lostDataPoints);
+            data_x = [];
+            gap_start = [];
+            for (let i = 0; i < acc_data.time_data.length; i++) {
+                if (Math.abs(acc_data.time_data[i] - acc_data.time_data[i + 1]) > 3000) {
+                    // console.log(`gap between ${new Date(acc_data.time_data[i])} and ${new Date(acc_data.time_data[i + 1])} at index = ${i} until ${i + 1}`);
+                    gap_start.push(i + 1);
+                }
+            }
+            let i = 0;
+            let pointer = 0;
+            first_ts = 0;
+            acc_data.time_data.forEach(element => {
+                if (pointer == 0) {
+                    first_ts = element;
+                }
+                ts = first_ts + (i * 20);
+                timm.push(new Date(ts));
+                i++;
+                gap_start.forEach(gap => {
+                    if (pointer == gap) {
+                        first_ts = element;
+                        i = 0;
+                    }
+                });
+                pointer++;
+            });
+            const trace1 = {
+                x: timm,
+                y: data.x,
+                type: 'scatter',
+                mode: 'lines',
+                name: 'X'
+            };
+            const trace2 = {
+                x: timm,
+                y: data.y,
+                type: 'scatter',
+                mode: 'lines',
+                name: 'Y'
+            };
+            const trace3 = {
+                x: timm,
+                y: data.z,
+                type: 'scatter',
+                mode: 'lines',
+                name: 'Z'
+            };
+            const layout = {
+                title: 'Acceleration Data',
+                height: 600,
+                showlegend: true,
+                yaxis: {
+                    autorange: true
+                }
+            };
+            const plot_data = [trace1, trace2, trace3];
+            Plotly.newPlot('plot', plot_data, layout);
+            download_ready = true;
+
+            console.log("making event")
+            var graphDiv = document.getElementById('plot');
+            graphDiv.on('plotly_relayout', function (eventdata) {
+                console.log("aa");
+                var gd = document.getElementById('plot');
+                var xRange = gd.layout.xaxis.range;
+                var yRange = gd.layout.yaxis.range;
+                gd.data.forEach(function (trace) {
+                    // console.log(trace);
+                    var len = Math.min(trace.x.length, trace.y.length)
+                    var xInside = []
+                    let xmin = date_to_unix(eventdata['xaxis.range[0]'])
+                    let xmax = date_to_unix(eventdata['xaxis.range[1]'])
+                    var yInside = []
+                    console.log(xmin, xmax)
+
+
+                    for (var i = 0; i < len; i++) {
+                        var x = date_to_unix(trace.x[i])
+                        var y = trace.y[i]
+                        if (x > xmin && x < xmax) {
+                            yInside.push(y)
+                        }
+                    }
+                    acc_to_send[trace['name']] = yInside;
+                });
+                console.log(acc_to_send)
+            })
+        };
+
+        const draw_fft = async (div, layout, data, peaks) => {
+            let i = 1;
+            peaks.forEach(peak => {
+                // console.log(peak);
+                const annotation = {
+                    x: parseFloat(peak[0]),
+                    y: parseFloat(peak[1]),
+                    text: get_peak_label(parseFloat(peak[0]).toFixed(4), parseFloat(peak[1]).toFixed(4), i),
+                    showarrow: true,
+                    arrowhead: 2,
+                    ax: 0,
+                    ay: -50,
+                    font: {
+                        family: 'Courier New, monospace',
+                        size: 16,
+                        color: '#ffffff'
+                    },
+                    align: 'center',
+                    bordercolor: '#c7c7c7',
+                    borderwidth: 2,
+                    borderpad: 4,
+                    bgcolor: data.line.color,
+                    opacity: 0.7
+                };
+                layout.annotations.push(annotation);
+                i++;
+            });
+            Plotly.newPlot(div, [data], layout);
+            layout.annotations = [];
+        }
+
+        const getData = async () => {
+            document.getElementById("loading-animation").style.visibility = 'visible';
+            document.getElementById("btn-download").style.visibility = 'hidden';
+            document.getElementById("content").style.visibility = 'hidden';
+            var xhr = new XMLHttpRequest();
+            const baseUrl = window.location.protocol + "//" + window.location.host;
+            var url = `${baseUrl}/api/get_node_data`;
+            var data = JSON.stringify({ "id": device_id });
+            console.log(data);
+            console.log(url);
+            xhr.open('POST', url, true);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    var response = JSON.parse(xhr.responseText);
+                    let p_x = 0, py = 0;
+                    response.forEach(data => {
+                        log_data = JSON.parse(data.json);
+                        time_data = JSON.parse(data.time_data);
+                        acc_data.x.push(...log_data.x_values);
+                        acc_data.y.push(...log_data.y_values);
+                        acc_data.z.push(...log_data.z_values);
+                        time_data.forEach(element => {
+                            acc_data.time_data.push((parseInt(element) * 1000));
+                        });
+                    });
+                    draw_acc(acc_data);
+                } else {
+                    console.warn("error to get data from API");
+                }
+            };
+            xhr.send(data);
+        };
+
+        const download = async () => {
+            var csvContent = "id,x,y,z,date_time(local time)\n";
+            for (var i = 0; i < acc_data.x.length; i++) {
+                csvContent += `${i + 1},${acc_data.x[i]},${acc_data.y[i]},${acc_data.z[i]},${timm[i]}\n`;
+            }
+            var blob = new Blob([csvContent], { type: 'text/csv' });
+            var a = document.createElement('a');
+            a.href = window.URL.createObjectURL(blob);
+            a.download = `${timm[acc_data.x.length - 1]}_acc_data.csv`;
+            a.style.display = 'none';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            download_ready = true;
+        };
+
+        setInterval(() => {
+            if (download_ready) {
+                document.getElementById("btn-download").style.visibility = 'visible';
+                document.getElementById("content").style.visibility = 'visible';
+                document.getElementById("loading-animation").style.visibility = 'hidden';
+                document.getElementById("loading-animation").style.display = 'none';
+            } else {
+                document.getElementById("btn-download").style.visibility = 'hidden';
+                document.getElementById("content").style.visibility = 'hidden';
+                document.getElementById("loading-animation").style.visibility = 'visible';
+                document.getElementById("loading-animation").style.display = 'flex';
+            }
+        }, 500);
+
+        window.onload = getData;
+
+
+        let fft_beacon = setInterval(() => {
+            try {
+                if (acc_to_send_status == 1) {
+                    acc_to_send_status = 0;
+                    if (ws.send(JSON.stringify(acc_to_send))) {
+                        console.log("sent")
+                    }
+                    // console.log(JSON.stringify(acc_to_send))
+                }
+            } catch (error) {
+                console.log(error);
+            }
+        }, 300);
+
+        document.getElementById('btn-download').onclick = () => {
+            download_ready = false;
+            download();
+        };
+
+    </script>
+</body>
+
+</html>

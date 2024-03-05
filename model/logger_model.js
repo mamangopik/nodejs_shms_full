@@ -26,6 +26,14 @@ class Logger_model {
     return result;
   }
 
+  get_node_datalog = async (id) => {
+    const query = `
+    select * from ${id};
+    `;
+    const [result] = await this.pool.query(query);
+    return result;
+  }
+
   get_acc = async (query) => {
     const [result] = await this.pool.query(query);
     return result;
