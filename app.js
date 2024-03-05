@@ -42,7 +42,9 @@ const viewpath = __dirname+'/static/';
 const Page = require('./utils/page_handler');
 const Page_handler = new Page(app,express,path,viewpath);
 
-const server = app.listen(app_port);
+const server = app.listen(app_port,()=>{
+    console.log("server listening on port",app_port)
+});
 
 const Mqtt_handler = require('./utils/mqtt_handler');
 const mqtt_handler = new Mqtt_handler(server,db);

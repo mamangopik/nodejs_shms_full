@@ -19,7 +19,7 @@ var edit_prop = {
 	name: [],
 	topic: [],
 	id: [],
-	log_raw:[]
+	log_raw: []
 };
 var nodes_dom = [];
 var delete_buttons = [];
@@ -45,12 +45,12 @@ const add_device = () => {
 	console.log(jsonData);
 	if (jsonData.type.length > 0 && jsonData.topic.length > 0 && jsonData.name.length > 0) {
 		fetch(baseUrl + '/api/devices/add', {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-				},
-				body: JSON.stringify(jsonData),
-			})
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify(jsonData),
+		})
 			.then(response => {
 				if (!response.ok) {
 					throw new Error('Network response was not ok');
@@ -75,17 +75,17 @@ const update_device = (id) => {
 		type: tb_type.value,
 		name: tb_name.value,
 		topic: replaceSpecialCharsWithHyphen(tb_topic.value),
-		log_raw : log_raw_data_buf,
-        id:id
+		log_raw: log_raw_data_buf,
+		id: id
 	};
 	if (jsonData.type.length > 0 && jsonData.topic.length > 0 && jsonData.name.length > 0) {
 		fetch(baseUrl + '/api/devices/update', {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-				},
-				body: JSON.stringify(jsonData),
-			})
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify(jsonData),
+		})
 			.then(response => {
 				if (!response.ok) {
 					throw new Error('Network response was not ok');
@@ -110,12 +110,12 @@ const remove_device = () => {
 		id: node_id_to_delete.id.value
 	};
 	fetch(baseUrl + '/api/devices/remove', {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-			},
-			body: JSON.stringify(jsonData),
-		})
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json',
+		},
+		body: JSON.stringify(jsonData),
+	})
 		.then(response => {
 			if (!response.ok) {
 				throw new Error('Network response was not ok');
@@ -139,7 +139,7 @@ const draw_node_list = () => {
 		name: [],
 		topic: [],
 		id: [],
-		log_raw:[]
+		log_raw: []
 	};
 	var nodes_dom = [];
 	var delete_buttons = [];
@@ -155,8 +155,8 @@ const draw_node_list = () => {
 		.then(data => {
 			// Work with the JSON data here
 			console.log(data);
-            device_container.innerHTML = '';
-            document.getElementById('btn-cancel').click();
+			device_container.innerHTML = '';
+			document.getElementById('btn-cancel').click();
 			data.data.forEach(element => {
 				edit_prop.name.push(element.name);
 				edit_prop.type.push(element.type);
@@ -165,7 +165,7 @@ const draw_node_list = () => {
 				edit_prop.log_raw.push(element.log_raw);
 				nodes_dom.push(`edit_url_${element.id}`);
 				delete_buttons.push(`delete_url_${element.id}`);
-				device_container.innerHTML +=	
+				device_container.innerHTML +=
 					`<div class="col-md-4 jumboron">
                     <ul class="list-group">
                         <li class="list-group-item">
@@ -178,6 +178,9 @@ const draw_node_list = () => {
                                 </a>
                                 <a href="${baseUrl}/realtime_graph/${element.type}?topic=${element.topic}" target="_blank">
                                     <img width="20" height="20" src="/images/open.png" alt="open">
+                                </a>
+								<a href="${baseUrl}/logger_data/direct?id=${element.id}" target="_blank">
+                                    <img width="20" height="20" src="/images/log-file.png" alt="open">
                                 </a>                
                             </div>
                             <br>
@@ -193,14 +196,14 @@ const draw_node_list = () => {
                     </ul>
                 </div>`
 			});
-			nodes_dom.forEach(function(id, index) {
+			nodes_dom.forEach(function (id, index) {
 				var element = document.getElementById(id);
 				if (element) {
-					element.addEventListener("click", function() {
-                        mode = "update";
+					element.addEventListener("click", function () {
+						mode = "update";
 						console.log(id);
 						console.log("test")
-                        update_id = edit_prop.id[index];
+						update_id = edit_prop.id[index];
 						document.getElementById('edit-modal-lbl').innerHTML = "Edit Node Properties";
 						tb_name.value = edit_prop.name[index];
 						tb_type.value = edit_prop.type[index];
@@ -213,29 +216,29 @@ const draw_node_list = () => {
 								log_raw_data_buf = 0;
 							}
 						});
-						if(edit_prop.type[index]=="accelerometer"){
-							document.getElementById("acc-toggle-switch").style.display='inline-block';
-						}else{
-							document.getElementById("acc-toggle-switch").style.display='none';
+						if (edit_prop.type[index] == "accelerometer") {
+							document.getElementById("acc-toggle-switch").style.display = 'inline-block';
+						} else {
+							document.getElementById("acc-toggle-switch").style.display = 'none';
 						}
 
-						if(edit_prop.log_raw[index]==1){
+						if (edit_prop.log_raw[index] == 1) {
 							toggleSwitch.checked = true;
-							document.getElementsByClassName('toggle-switch-handle')[0].style.left='30px';
-							document.getElementsByClassName('toggle-switch')[0].style.backgroundColor='#168bff';
-						}else{
+							document.getElementsByClassName('toggle-switch-handle')[0].style.left = '30px';
+							document.getElementsByClassName('toggle-switch')[0].style.backgroundColor = '#168bff';
+						} else {
 							toggleSwitch.checked = false;
-							document.getElementsByClassName('toggle-switch-handle')[0].style.left='0px';
-							document.getElementsByClassName('toggle-switch')[0].style.backgroundColor='#ccc';
+							document.getElementsByClassName('toggle-switch-handle')[0].style.left = '0px';
+							document.getElementsByClassName('toggle-switch')[0].style.backgroundColor = '#ccc';
 						}
 					});
 				}
 			});
 
-			delete_buttons.forEach(function(id, index) {
+			delete_buttons.forEach(function (id, index) {
 				var delete_element = document.getElementById(id);
 				if (delete_element) {
-					delete_element.addEventListener("click", function() {
+					delete_element.addEventListener("click", function () {
 						node_id_to_delete.label.innerHTML = `Remove node:"<i>${edit_prop.id[index]}</i>" ?`;
 						node_id_to_delete.id.value = edit_prop.id[index];
 						console.log(node_id_to_delete.id.value);
@@ -250,54 +253,54 @@ const draw_node_list = () => {
 
 // Function to delete a cookie by name
 function deleteCookie(cookieName) {
-    // Set the expiration date to a date in the past (1 January 1970)
+	// Set the expiration date to a date in the past (1 January 1970)
 	document.cookie = cookieName + '=; Max-Age=0'
 }
 
 
-window.onload = ()=>{
-    draw_node_list();
-	document.getElementById("url-device").href=baseUrl+'/devices';
-	document.getElementById("url-setup").href=baseUrl+'/config';
+window.onload = () => {
+	draw_node_list();
+	document.getElementById("url-device").href = baseUrl + '/devices';
+	document.getElementById("url-setup").href = baseUrl + '/config';
 }
 
 btn_add.onclick = () => {
-    mode = 'add';
+	mode = 'add';
 	document.getElementById('edit-modal-lbl').innerHTML = "Add new node";
 	tb_name.value = '';
 	tb_type.value = '';
 	tb_topic.value = '';
 }
 
-btn_logout.onclick = ()=>{
+btn_logout.onclick = () => {
 	deleteCookie("login_info");
 	window.location = baseUrl;
 }
 
 btn_save.onclick = () => {
-    if(mode == "add"){
-        add_device();
-    }
-    else{
-        update_device(update_id);
-    }
-    document.getElementById('btn-cancel').click();
+	if (mode == "add") {
+		add_device();
+	}
+	else {
+		update_device(update_id);
+	}
+	document.getElementById('btn-cancel').click();
 }
 
 btn_confirm_delete.onclick = () => {
 	remove_device();
-    document.getElementById('btn-cancel-remove').click();
+	document.getElementById('btn-cancel-remove').click();
 }
 
 
 toggleSwitch.addEventListener("change", () => {
-    if (toggleSwitch.checked) {
-        document.getElementsByClassName('toggle-switch-handle')[0].style.left='30px';
-		document.getElementsByClassName('toggle-switch')[0].style.backgroundColor='#168bff';
-        console.log("Switch is on");
-    } else {
-        document.getElementsByClassName('toggle-switch-handle')[0].style.left='0px';
-		document.getElementsByClassName('toggle-switch')[0].style.backgroundColor='#ccc';
-        console.log("Switch is off");
-    }
+	if (toggleSwitch.checked) {
+		document.getElementsByClassName('toggle-switch-handle')[0].style.left = '30px';
+		document.getElementsByClassName('toggle-switch')[0].style.backgroundColor = '#168bff';
+		console.log("Switch is on");
+	} else {
+		document.getElementsByClassName('toggle-switch-handle')[0].style.left = '0px';
+		document.getElementsByClassName('toggle-switch')[0].style.backgroundColor = '#ccc';
+		console.log("Switch is off");
+	}
 });

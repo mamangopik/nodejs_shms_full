@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contoh Tampilan Bootstrap 3</title>
+  <link rel="icon" href="/images/favicon.png">
+  <!-- Load Bootstrap 3 CSS -->
+  <link rel="stylesheet" href="/css/bootstrap3.min.css">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+  <script src="/js/jquery.min.js"></script>
+  <script src="/js/bootstrap3.min.js"></script>
+  <script src='/js/plotly.min.js'></script>
+</head>
+<body>
+
+<div class="container-fluid">
+    <h2>Form Input dengan Bootstrap 3</h2>
+
+    <!-- Input Kalender -->
+    <div class="form-group">
+        <label for="datepicker">Pilih Tanggal:</label>
+        <input type="date" class="form-control" id="datepicker">
+    </div>
+
+    <!-- Tombol Input -->
+    <button type="button" class="btn btn-primary" id="req-data">Kirim</button>
+    <div class="row">   
+        <div class="col-md-12">
+            <div class="jumbotron custom-jumbotron">
+                <h3>Time Domain</h3>
+                <div id='acc_graph' style="border-radius: 5%;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- Script untuk mengaktifkan datepicker -->
+<script src="/js/history_reader.js"></script>
+<script>
+    var x = {
+	    	y: acc_data.x,
+	    	mode: 'lines',
+	    	type: 'scatter',
+	    	name: 'x',
+	    };
+        var y = {
+	    	y: acc_data.y,
+	    	mode: 'lines',
+	    	type: 'scatter',
+	    	name: 'x',
+	    };
+        var z = {
+	    	y: acc_data.z,
+	    	mode: 'lines',
+	    	type: 'scatter',
+	    	name: 'x',
+	    };
+	    Plotly.newPlot('acc_graph', [x,y,z], layout, toolbar);
+</script>
+
+</body>
+</html>
