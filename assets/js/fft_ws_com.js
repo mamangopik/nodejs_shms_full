@@ -1,7 +1,6 @@
 // DOM
-var graphDiv = document.getElementById('acc_graph');
 var recorded_lbl = document.getElementById('recorded');
-var btn_scroll = document.getElementById('btn-autoscroll');
+// var btn_scroll = document.getElementById('btn-autoscroll');
 var btn_download = document.getElementById('btn-download');
 var btn_axis = {
     x: document.getElementById('btn-x'),
@@ -23,14 +22,25 @@ var peaks_table = {
 };
 
 const draggable = document.getElementById("peak-info-popup");
+show_history_status = 0;
 
 // GLOBAL
 var acc_data = {
     x: [],
     y: [],
     z: [],
+    xkf: [],
+    ykf: [],
+    zkf: [],
     timestamp: []
 }
+
+var mqtt;
+var reconnectTimeout = 2000;
+var ws_addr = window.location.host.replace(':7777', '');
+var host = ws_addr;
+var port = 9001;
+var last_log = 0;
 var RSSI = 0;
 var v_batt = 0;
 var packet_length = 64;
@@ -39,12 +49,14 @@ const topic = urlParams.get('topic');
 const baseUrl = window.location.protocol + "//" + window.location.host;
 var python_ws_addr = 'ws://' + window.location.host.replace(':7777', ':5556');
 var acc_to_send = {};
+var acc_to_send_kf = {};
 var acc_to_send_status = 0;
 var indeks = 0;
-var window_area = 1024 * 4;
+var window_area = 1024 * 8;
 var window_size = window_area;
 var last_length = 0;
-var fft_plot_heigh = 200;
+var fft_plot_heigh = 300;
+const clientId = "realtime_acc_publisher_" + Math.random().toString(16).substr(2, 8);
 
 const toolbar = {
     modeBarButtonsToRemove: ['autoScale2d']
@@ -189,7 +201,9 @@ const update_history = async () => {
         name: 'z',
     };
     data = [xhistory, yhistory, zhistory];
-    Plotly.newPlot('acc_history', data, layout_history);
+    if (show_history_status == 1) {
+        Plotly.newPlot('acc_history', data, layout_history);
+    }
 }
 
 const get_peak_label = (x, y, index) => {
@@ -260,16 +274,21 @@ const push_acc_data = async (data) => {
             acc_data.z.push(parseFloat(z));
         });
     }
-    // if (data.timestamp) {
-    //         data.timestamp.forEach(z => {
-    //         timestamp = z;
-    //         date = new Date(timestamp*1000);
-    //         formattedDateTime = date.toISOString();
-    //         formattedDateTime = String(formattedDateTime.replace('Z',''))
-    //         formattedDateTime = String(formattedDateTime.replace('T',' '))
-    //         acc_data.timestamp.push(formattedDateTime);
-    //     });
-    // }
+    if (data.xkf_values) {
+        data.xkf_values.forEach(x => {
+            acc_data.xkf.push(parseFloat(x));
+        });
+    }
+    if (data.ykf_values) {
+        data.ykf_values.forEach(y => {
+            acc_data.ykf.push(parseFloat(y));
+        });
+    }
+    if (data.zkf_values) {
+        data.zkf_values.forEach(z => {
+            acc_data.zkf.push(parseFloat(z));
+        });
+    }
     if (data.timestamp) {
         data.timestamp.forEach(z => {
             timestamp = z;
@@ -299,6 +318,21 @@ const push_acc_data = async (data) => {
             acc_data.timestamp.push(formattedDateTime);
         });
     }
+
+    if (mqtt.isConnected()) {
+        acc_to_send.peaks_req = 3;
+        const mqttMessage = new Paho.MQTT.Message(JSON.stringify(acc_to_send));
+        mqttMessage.destinationName = "/shms/convert/acc";
+        mqtt.send(mqttMessage);
+
+        acc_to_send_kf.peaks_req = 3;
+        const mqttMessage_kf = new Paho.MQTT.Message(JSON.stringify(acc_to_send_kf));
+        mqttMessage_kf.destinationName = "/shms/convert/acc_kf";
+        mqtt.send(mqttMessage_kf);
+
+    } else {
+        console.error("MQTT client is not connected");
+    }
 }
 
 const download = async () => {
@@ -320,121 +354,247 @@ const download = async () => {
     document.body.removeChild(a);
 }
 
+// MQTT
+mqtt = new Paho.MQTT.Client(host, port, clientId);
+mqtt.onMessageArrived = onMessageArrived;
+mqtt.onConnectionLost = onConnectionLost;
+
+var options = {
+    timeout: 3,
+    onSuccess: onConnect,
+};
+
+mqtt.connect(options);
+
+function onConnect() {
+    console.log("Connected");
+    mqtt.subscribe(`/shms/convert/fft/${clientId}`);
+}
+
+// Event handler for connection failure
+function onFailure(err) {
+    console.error("Failed to connect to MQTT broker:", err.errorMessage);
+    // Retry connection after a delay
+    setTimeout(() => {
+        mqtt.connect({ onSuccess: onConnect, onFailure: onFailure });
+    }, 5000); // Retry every 5 seconds
+}
+
+// Event handler for connection loss
+function onConnectionLost(responseObject) {
+    if (responseObject.errorCode !== 0) {
+        console.error("Connection lost:", responseObject.errorMessage);
+        // Attempt automatic reconnection
+        setTimeout(() => {
+            mqtt.connect({ onSuccess: onConnect, onFailure: onFailure });
+        }, 1000); // Retry every 5 seconds
+    }
+}
+
+function onMessageArrived(message) {
+    let mqtt_payload = {
+        'topic': message.destinationName,
+        message: message.payloadString
+    }
+    let data = JSON.parse(mqtt_payload.message);
+    let fft_data = data.data;
+    let peaks = data.peaks;
+    let topic_in = data.topic_in;
+    console.log(topic_in)
+
+    var fft_x = {
+        x: fft_data.x.frequency,
+        y: fft_data.x.magnitude,
+        mode: 'lines',
+        type: 'scatter',
+        name: 'x',
+        line: {
+            color: 'rgb(0, 0, 255)',
+            width: 2
+        }
+    };
+    var fft_y = {
+        x: fft_data.y.frequency,
+        y: fft_data.y.magnitude,
+        mode: 'lines',
+        type: 'scatter',
+        name: 'y',
+        line: {
+            color: 'rgb(0, 255, 0)',
+            width: 2
+        }
+    };
+    var fft_z = {
+        x: fft_data.z.frequency,
+        y: fft_data.z.magnitude,
+        mode: 'lines',
+        type: 'scatter',
+        name: 'z',
+        line: {
+            color: 'rgb(255, 0, 0)',
+            width: 2
+        }
+    };
+
+    if (topic_in == "/shms/convert/acc") {
+        new Promise(() => {
+            draw_fft('fft_graph_x', layout_fft.x, fft_x, peaks.x);
+            peaks_table.x[0].innerHTML = `${parseFloat(data.peaks.x[0][0]).toFixed(4)}Hz, ${parseFloat(data.peaks.x[0][1]).toFixed(4)}mG`;
+            peaks_table.x[1].innerHTML = `${parseFloat(data.peaks.x[1][0]).toFixed(4)}Hz, ${parseFloat(data.peaks.x[1][1]).toFixed(4)}mG`;
+            peaks_table.x[2].innerHTML = `${parseFloat(data.peaks.x[2][0]).toFixed(4)}Hz, ${parseFloat(data.peaks.x[2][1]).toFixed(4)}mG`;
+        });
+        new Promise(() => {
+            draw_fft('fft_graph_y', layout_fft.y, fft_y, peaks.y);
+            peaks_table.y[0].innerHTML = `${parseFloat(data.peaks.y[0][0]).toFixed(4)}Hz, ${parseFloat(data.peaks.y[0][1]).toFixed(4)}mG`;
+            peaks_table.y[1].innerHTML = `${parseFloat(data.peaks.y[1][0]).toFixed(4)}Hz, ${parseFloat(data.peaks.y[1][1]).toFixed(4)}mG`;
+            peaks_table.y[2].innerHTML = `${parseFloat(data.peaks.y[2][0]).toFixed(4)}Hz, ${parseFloat(data.peaks.y[2][1]).toFixed(4)}mG`;
+        });
+        new Promise(() => {
+            draw_fft('fft_graph_z', layout_fft.x, fft_z, peaks.z);
+            peaks_table.z[0].innerHTML = `${parseFloat(data.peaks.z[0][0]).toFixed(4)}Hz, ${parseFloat(data.peaks.z[0][1]).toFixed(4)}mG`;
+            peaks_table.z[1].innerHTML = `${parseFloat(data.peaks.z[1][0]).toFixed(4)}Hz, ${parseFloat(data.peaks.z[1][1]).toFixed(4)}mG`;
+            peaks_table.z[2].innerHTML = `${parseFloat(data.peaks.z[2][0]).toFixed(4)}Hz, ${parseFloat(data.peaks.z[2][1]).toFixed(4)}mG`;
+        });
+    } else if (topic_in == "/shms/convert/acc_kf") {
+        new Promise(() => {
+            fft_x.name = 'X KF';
+            draw_fft('fft_graph_x_kf', layout_fft.x, fft_x, peaks.x);
+        });
+        new Promise(() => {
+            fft_y.name = 'Y KF';
+            draw_fft('fft_graph_y_kf', layout_fft.y, fft_y, peaks.y);
+        });
+        new Promise(() => {
+            fft_z.name = 'Z KF';
+            draw_fft('fft_graph_z_kf', layout_fft.x, fft_z, peaks.z);
+        });
+    }
+}
 // SOCKET
 var socket_io = io.connect(baseUrl);
 
-function connect() {
-    var ws = new WebSocket(python_ws_addr);
-    ws.onopen = function () {
-        console.log('terhubung ke socket');
-    }
-    let fft_beacon = setInterval(() => {
-        try {
-            if (acc_to_send_status == 1) {
-                acc_to_send_status = 0;
-                ws.send(JSON.stringify(acc_to_send));
-            }
-        } catch (error) {
-            console.log(error);
-        }
-    }, 300);
-    ws.onmessage = async function (e) {
-        data = JSON.parse(e.data)
-        var fft_x = {
-            x: data.data.x.frequency,
-            y: data.data.x.magnitude,
-            mode: 'lines',
-            type: 'scatter',
-            name: 'x',
-            line: {
-                color: 'rgb(0, 0, 255)',
-                width: 2
-            }
-        };
-        var fft_y = {
-            x: data.data.y.frequency,
-            y: data.data.y.magnitude,
-            mode: 'lines',
-            type: 'scatter',
-            name: 'y',
-            line: {
-                color: 'rgb(0, 255, 0)',
-                width: 2
-            }
-        };
-        var fft_z = {
-            x: data.data.z.frequency,
-            y: data.data.z.magnitude,
-            mode: 'lines',
-            type: 'scatter',
-            name: 'z',
-            line: {
-                color: 'rgb(255, 0, 0)',
-                width: 2
-            }
-        };
+// function connect() {
+//     var ws = new WebSocket(python_ws_addr);
+//     ws.onopen = function () {
+//         console.log('terhubung ke socket');
+//     }
+//     let fft_beacon = setInterval(() => {
+//         try {
+//             if (acc_to_send_status == 1) {
+//                 acc_to_send_status = 0;
+//                 ws.send(JSON.stringify(acc_to_send));
+//             }
+//         } catch (error) {
+//             console.log(error);
+//         }
+//     }, 300);
+//     ws.onmessage = async function (e) {
+//         data = JSON.parse(e.data)
+//         var fft_x = {
+//             x: data.data.x.frequency,
+//             y: data.data.x.magnitude,
+//             mode: 'lines',
+//             type: 'scatter',
+//             name: 'x',
+//             line: {
+//                 color: 'rgb(0, 0, 255)',
+//                 width: 2
+//             }
+//         };
+//         var fft_y = {
+//             x: data.data.y.frequency,
+//             y: data.data.y.magnitude,
+//             mode: 'lines',
+//             type: 'scatter',
+//             name: 'y',
+//             line: {
+//                 color: 'rgb(0, 255, 0)',
+//                 width: 2
+//             }
+//         };
+//         var fft_z = {
+//             x: data.data.z.frequency,
+//             y: data.data.z.magnitude,
+//             mode: 'lines',
+//             type: 'scatter',
+//             name: 'z',
+//             line: {
+//                 color: 'rgb(255, 0, 0)',
+//                 width: 2
+//             }
+//         };
 
-        if (btn_axis.toggle_x == 1) {
-            document.getElementById('fft_graph_x').style.display = 'inline';
-            await draw_fft('fft_graph_x', layout_fft.x, fft_x, data.peaks.x);
-            new Promise(() => {
-                peaks_table.x[0].innerHTML = `${parseFloat(data.peaks.x[0][0]).toFixed(4)}Hz, ${parseFloat(data.peaks.x[0][1]).toFixed(4)}mG`;
-                peaks_table.x[1].innerHTML = `${parseFloat(data.peaks.x[1][0]).toFixed(4)}Hz, ${parseFloat(data.peaks.x[1][1]).toFixed(4)}mG`;
-                peaks_table.x[2].innerHTML = `${parseFloat(data.peaks.x[2][0]).toFixed(4)}Hz, ${parseFloat(data.peaks.x[2][1]).toFixed(4)}mG`;
-            });
-        } else {
-            document.getElementById('fft_graph_x').style.display = 'none';
-        }
-        if (btn_axis.toggle_y == 1) {
-            document.getElementById('fft_graph_y').style.display = 'inline';
-            await draw_fft('fft_graph_y', layout_fft.y, fft_y, data.peaks.y);
-            new Promise(() => {
-                peaks_table.y[0].innerHTML = `${parseFloat(data.peaks.y[0][0]).toFixed(4)}Hz, ${parseFloat(data.peaks.y[0][1]).toFixed(4)}mG`;
-                peaks_table.y[1].innerHTML = `${parseFloat(data.peaks.y[1][0]).toFixed(4)}Hz, ${parseFloat(data.peaks.y[1][1]).toFixed(4)}mG`;
-                peaks_table.y[2].innerHTML = `${parseFloat(data.peaks.y[2][0]).toFixed(4)}Hz, ${parseFloat(data.peaks.y[2][1]).toFixed(4)}mG`;
-            });
-        } else {
-            document.getElementById('fft_graph_y').style.display = 'none';
-        }
-        if (btn_axis.toggle_z == 1) {
-            document.getElementById('fft_graph_z').style.display = 'inline';
-            await draw_fft('fft_graph_z', layout_fft.z, fft_z, data.peaks.z);
-            new Promise(() => {
-                peaks_table.z[0].innerHTML = `${parseFloat(data.peaks.z[0][0]).toFixed(4)}Hz, ${parseFloat(data.peaks.z[0][1]).toFixed(4)}mG`;
-                peaks_table.z[1].innerHTML = `${parseFloat(data.peaks.z[1][0]).toFixed(4)}Hz, ${parseFloat(data.peaks.z[1][1]).toFixed(4)}mG`;
-                peaks_table.z[2].innerHTML = `${parseFloat(data.peaks.z[2][0]).toFixed(4)}Hz, ${parseFloat(data.peaks.z[2][1]).toFixed(4)}mG`;
-            });
-        } else {
-            document.getElementById('fft_graph_z').style.display = 'none';
-        }
-    };
+//         if (btn_axis.toggle_x == 1) {
+//             document.getElementById('fft_graph_x').style.display = 'block';
+//             await draw_fft('fft_graph_x', layout_fft.x, fft_x, data.peaks.x);
+//             await draw_fft('fft_graph_x_kf', layout_fft.x, fft_x, data.peaks.x);
+//             new Promise(() => {
+//                 peaks_table.x[0].innerHTML = `${parseFloat(data.peaks.x[0][0]).toFixed(4)}Hz, ${parseFloat(data.peaks.x[0][1]).toFixed(4)}mG`;
+//                 peaks_table.x[1].innerHTML = `${parseFloat(data.peaks.x[1][0]).toFixed(4)}Hz, ${parseFloat(data.peaks.x[1][1]).toFixed(4)}mG`;
+//                 peaks_table.x[2].innerHTML = `${parseFloat(data.peaks.x[2][0]).toFixed(4)}Hz, ${parseFloat(data.peaks.x[2][1]).toFixed(4)}mG`;
+//             });
+//         } else {
+//             document.getElementById('fft_graph_x').style.display = 'none';
+//         }
+//         if (btn_axis.toggle_y == 1) {
+//             document.getElementById('fft_graph_y').style.display = 'block';
+//             await draw_fft('fft_graph_y', layout_fft.y, fft_y, data.peaks.y);
+//             await draw_fft('fft_graph_y_kf', layout_fft.y, fft_y, data.peaks.y);
+//             new Promise(() => {
+//                 peaks_table.y[0].innerHTML = `${parseFloat(data.peaks.y[0][0]).toFixed(4)}Hz, ${parseFloat(data.peaks.y[0][1]).toFixed(4)}mG`;
+//                 peaks_table.y[1].innerHTML = `${parseFloat(data.peaks.y[1][0]).toFixed(4)}Hz, ${parseFloat(data.peaks.y[1][1]).toFixed(4)}mG`;
+//                 peaks_table.y[2].innerHTML = `${parseFloat(data.peaks.y[2][0]).toFixed(4)}Hz, ${parseFloat(data.peaks.y[2][1]).toFixed(4)}mG`;
+//             });
+//         } else {
+//             document.getElementById('fft_graph_y').style.display = 'none';
+//         }
+//         if (btn_axis.toggle_z == 1) {
+//             document.getElementById('fft_graph_z').style.display = 'block';
+//             await draw_fft('fft_graph_z', layout_fft.z, fft_z, data.peaks.z);
+//             await draw_fft('fft_graph_z_kf', layout_fft.z, fft_z, data.peaks.z);
+//             new Promise(() => {
+//                 peaks_table.z[0].innerHTML = `${parseFloat(data.peaks.z[0][0]).toFixed(4)}Hz, ${parseFloat(data.peaks.z[0][1]).toFixed(4)}mG`;
+//                 peaks_table.z[1].innerHTML = `${parseFloat(data.peaks.z[1][0]).toFixed(4)}Hz, ${parseFloat(data.peaks.z[1][1]).toFixed(4)}mG`;
+//                 peaks_table.z[2].innerHTML = `${parseFloat(data.peaks.z[2][0]).toFixed(4)}Hz, ${parseFloat(data.peaks.z[2][1]).toFixed(4)}mG`;
+//             });
+//         } else {
+//             document.getElementById('fft_graph_z').style.display = 'none';
+//         }
+//     };
 
-    ws.onclose = function (e) {
-        console.log('Socket is closed. Reconnect will be attempted in 1 second.', e.reason);
-        clearInterval(fft_beacon);
-        setTimeout(function () {
-            connect();
-        }, 1000);
-    };
+//     ws.onclose = function (e) {
+//         console.log('Socket is closed. Reconnect will be attempted in 1 second.', e.reason);
+//         clearInterval(fft_beacon);
+//         setTimeout(function () {
+//             connect();
+//         }, 1000);
+//     };
 
-    ws.onerror = function (err) {
-        console.error('Socket encountered error: ', err.message, 'Closing socket');
-        ws.close();
-    };
-}
-
-connect();
+//     ws.onerror = function (err) {
+//         console.error('Socket encountered error: ', err.message, 'Closing socket');
+//         ws.close();
+//     };
+// }
+// // run socket to python server
+// connect();
 
 socket_io.on(topic, async (data) => {
-    // console.log(topic);
-    // console.log(data);
     console.log(Intl.DateTimeFormat().resolvedOptions().timeZone)
     data_acc = data;
+    last_log = data_acc.last_log;
+    packet_length = data_acc.packet_size;
     if (data_acc.x_values) {
         push_acc_data(data_acc);
-        console.log(data_acc);
-        // draw_acc();
+        acc_to_send['fs'] = data_acc.sampling_frequency;
+        acc_to_send['cid'] = clientId;
+        acc_to_send_kf['fs'] = data_acc.sampling_frequency;
+        acc_to_send_kf['cid'] = clientId;
     }
+});
+
+socket_io.on(`${topic}_info`, async (data) => {
+    last_log = data;
+    console.log("waktuu", new Date(data));
 });
 
 let history_beacon = setInterval(async () => {
@@ -446,74 +606,25 @@ let history_beacon = setInterval(async () => {
 }, 10000);
 
 
-const draw_acc = async () => {
-    try {
-        recorded_lbl.innerHTML = `Recorded data: ${acc_data.x.length}, Data in plot: ${0 + indeks} to ${window_area + indeks}</br>aa`;
-        var xTrace = {
-            y: acc_data.x.slice(0 + indeks, window_area + indeks),
-            text: acc_data.timestamp.slice(0 + indeks, window_area + indeks),
-            type: 'scatter',
-            mode: 'lines',
-            name: 'x',
-            line: {
-                color: 'rgb(0, 0, 255)',
-                width: 1
-            }
-        };
-        var yTrace = {
-            y: acc_data.y.slice(0 + indeks, window_area + indeks),
-            text: acc_data.timestamp.slice(0 + indeks, window_area + indeks),
-            type: 'scatter',
-            mode: 'lines',
-            name: 'y',
-            line: {
-                color: 'rgb(0, 255, 0)',
-                width: 1
-            }
-        };
-        var zTrace = {
-            y: acc_data.z.slice(0 + indeks, window_area + indeks),
-            text: acc_data.timestamp.slice(0 + indeks, window_area + indeks),
-            type: 'scatter',
-            mode: 'lines',
-            name: 'z',
-            line: {
-                color: 'rgb(255, 0, 0)',
-                width: 1
-            }
-        };
-        var plotData = [];
-        if (btn_axis.toggle_x == 1) plotData.push(xTrace);
-        if (btn_axis.toggle_y == 1) plotData.push(yTrace);
-        if (btn_axis.toggle_z == 1) plotData.push(zTrace);
-
-        if (acc_data.x.length !== last_length && autoscroll_status == 1) {
-            if (acc_data.x.length > window_area) {
-                indeks += packet_length;
-                acc_to_send['x'] = xTrace.y;
-                acc_to_send['y'] = yTrace.y;
-                acc_to_send['z'] = zTrace.y;
-                acc_to_send['peaks_req'] = 3;
-                acc_to_send_status = 1;
-                Plotly.newPlot('acc_graph', plotData, layout);
-            } else {
-                Plotly.newPlot('acc_graph', plotData, layout);
-            }
-            last_length = acc_data.x.length;
-        }
-    } catch (error) {
-        console.log(error);
-    }
-}
-
 let animation_pointer = 0;
 
 const update_recv_data_info = async (index) => {
     try {
-        recorded_lbl.innerHTML = `Recorded data: ${acc_data.x.length},
+        new Promise(() => {
+            if (last_log != 0) {
+                recorded_lbl.innerHTML = `Recorded data: ${acc_data.x.length},
          Data in plot: ${0 + indeks} to ${window_area + indeks}</br>
-        RSSI: <b>${RSSI}dB</b>, Battery Voltage: <b>${v_batt}</b>
+         RSSI: <b>${RSSI}dB</b>, Battery Voltage: <b>${v_batt}</b>
+         </br>Last Logged: <b>${new Date(last_log)}</b>
         `;
+            } else {
+                recorded_lbl.innerHTML = `Recorded data: ${acc_data.x.length},
+         Data in plot: ${0 + indeks} to ${window_area + indeks}</br>
+         RSSI: <b>${RSSI}dB</b>, Battery Voltage: <b>${v_batt}</b>
+         </br>Last Logged: <b>Dissabled</b>
+        `;
+            }
+        })
     } catch (error) {
         console.error(error);
     }
@@ -553,18 +664,63 @@ const animate_acc = async (index) => {
                 width: 1
             }
         };
-        var plotData = [];
 
-        // if (autoscroll_status == 1) {
+        var xkfTrace = {
+            y: acc_data.xkf.slice(index, index + window_size),
+            text: acc_data.timestamp.slice(index, index + window_size),
+            type: 'scatter',
+            mode: 'lines',
+            name: 'x KF',
+            line: {
+                color: 'rgb(0, 0, 255)',
+                width: 1
+            }
+        };
+        var ykfTrace = {
+            y: acc_data.ykf.slice(index, index + window_size),
+            text: acc_data.timestamp.slice(index, index + window_size),
+            type: 'scatter',
+            mode: 'lines',
+            name: 'y KF',
+            line: {
+                color: 'rgb(0, 255, 0)',
+                width: 1
+            }
+        };
+        var zkfTrace = {
+            y: acc_data.zkf.slice(index, index + window_size),
+            text: acc_data.timestamp.slice(index, index + window_size),
+            type: 'scatter',
+            mode: 'lines',
+            name: 'z KF',
+            line: {
+                color: 'rgb(255, 0, 0)',
+                width: 1
+            }
+        };
+        var plotData = [];
+        var plotDatakf = [];
+
         if (btn_axis.toggle_x == 1) plotData.push(xTrace);
         if (btn_axis.toggle_y == 1) plotData.push(yTrace);
         if (btn_axis.toggle_z == 1) plotData.push(zTrace);
+
+        if (btn_axis.toggle_x == 1) plotDatakf.push(xkfTrace);
+        if (btn_axis.toggle_y == 1) plotDatakf.push(ykfTrace);
+        if (btn_axis.toggle_z == 1) plotDatakf.push(zkfTrace);
+
         acc_to_send['x'] = xTrace.y;
         acc_to_send['y'] = yTrace.y;
         acc_to_send['z'] = zTrace.y;
+
+        acc_to_send_kf['x'] = xkfTrace.y;
+        acc_to_send_kf['y'] = ykfTrace.y;
+        acc_to_send_kf['z'] = zkfTrace.y;
+
         acc_to_send['peaks_req'] = 3;
         acc_to_send_status = 1;
         Plotly.newPlot('acc_graph', plotData, layout);
+        Plotly.newPlot('acc_graph_kalman', plotDatakf, layout);
         if (zTrace.y.length >= window_size) {
             let delta = acc_data.timestamp.length - animation_pointer;
             let SP = parseInt(window_size)
@@ -575,7 +731,6 @@ const animate_acc = async (index) => {
                 animation_pointer += 1;
             }
         }
-        // }
     } catch (error) {
         console.error('something error:', error);
     }
@@ -597,15 +752,15 @@ setInterval(() => {
 
 
 // DOM events
-btn_scroll.onclick = () => {
-    if (autoscroll_status === 1) {
-        autoscroll_status = 0;
-        btn_scroll.className = 'btn btn-disable btn-md'
-    } else {
-        autoscroll_status = 1;
-        btn_scroll.className = 'btn btn-primary btn-md'
-    }
-}
+// btn_scroll.onclick = () => {
+//     if (autoscroll_status === 1) {
+//         autoscroll_status = 0;
+//         btn_scroll.className = 'btn btn-disable btn-md'
+//     } else {
+//         autoscroll_status = 1;
+//         btn_scroll.className = 'btn btn-primary btn-md'
+//     }
+// }
 
 btn_download.onclick = async () => {
     if (acc_data.x.length > 10) {
@@ -642,23 +797,36 @@ btn_axis.z.onclick = () => {
     }
 }
 
-let isDragging = false;
-let offsetX, offsetY;
-draggable.addEventListener("mousedown", (e) => {
-    isDragging = true;
-    offsetX = e.clientX - draggable.getBoundingClientRect().left;
-    offsetY = e.clientY - draggable.getBoundingClientRect().top;
-    draggable.style.cursor = "grabbing";
-});
-document.addEventListener("mousemove", async (e) => {
-    if (isDragging) {
-        draggable.style.left = e.clientX - offsetX + "px";
-        draggable.style.top = e.clientY - offsetY + "px";
+// let isDragging = false;
+// let offsetX, offsetY;
+// draggable.addEventListener("mousedown", (e) => {
+//     isDragging = true;
+//     offsetX = e.clientX - draggable.getBoundingClientRect().left;
+//     offsetY = e.clientY - draggable.getBoundingClientRect().top;
+//     draggable.style.cursor = "grabbing";
+// });
+// document.addEventListener("mousemove", async (e) => {
+//     if (isDragging) {
+//         draggable.style.left = e.clientX - offsetX + "px";
+//         draggable.style.top = e.clientY - offsetY + "px";
+//     }
+// });
+// document.addEventListener("mouseup", async () => {
+//     if (isDragging == true) {
+//         draggable.style.cursor = "grab";
+//     }
+//     isDragging = false;
+// });
+
+document.getElementById("btn-toggle-history-show").onclick = () => {
+    if (show_history_status == 1) {
+        show_history_status = 0;
+        document.getElementById("btn-toggle-history-show").innerHTML = "Show";
+        document.getElementById("acc_history").style.display = 'none';
+    } else {
+        show_history_status = 1;
+        document.getElementById("btn-toggle-history-show").innerHTML = "Hide";
+        document.getElementById("acc_history").style.display = 'block';
     }
-});
-document.addEventListener("mouseup", async () => {
-    if (isDragging == true) {
-        draggable.style.cursor = "grab";
-    }
-    isDragging = false;
-});
+    console.log(show_history_status);
+}

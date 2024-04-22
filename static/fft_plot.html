@@ -1,184 +1,244 @@
 <html>
-    <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <link rel="icon" href="/images/favicon.png">
-        <!-- Load Bootstrap 3 CSS -->
-        <link rel="stylesheet" href="/css/bootstrap3.min.css">
-        <!-- Load Plotly.js into the DOM -->
-        <script src='/js/plotly.min.js'></script>
-        <script src="/js/socket-io.min.js"></script>
-        <style>
-            .row.display-flex {
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="/images/favicon.png">
+    <!-- Load Bootstrap 3 CSS -->
+    <link rel="stylesheet" href="/css/bootstrap3.min.css">
+    <!-- Load Plotly.js into the DOM -->
+    <script src='/js/plotly.min.js'></script>
+    <script src="/js/socket-io.min.js"></script>
+    <script src="/js/paho-mqtt.min.js"></script>
+    <style>
+        .row.display-flex {
             display: flex;
             flex-wrap: wrap;
-            }
-            .row.display-flex > [class*='col-'] {
+        }
+
+        .row.display-flex>[class*='col-'] {
             display: flex;
             flex-direction: column;
-            }
-            .fft-plot-wrap{
-                margin-top: 1%;
+        }
 
-            }
-            .table-peak{
-                font-weight: bold;
-                font-size: small;
-            }
-            #peak-info-popup{
-                position: fixed; /* Fixed position for the popup */
-                top: 5%; /* Position at the top of the viewport */
-                left: 70%; /* Position at the left corner of the viewport */
-                z-index: 1; /* Ensure it appears above the main div content */
-                cursor: grab; /* Change cursor to indicate draggable element */
-            }
-            #plot-content{
-                position: absolute;
-                width: 100%;
-                height: 100%;
-                overflow: auto; /* Enable scrolling for the main div */
-            }
-            #table-sheet{
-                padding: 5%;
-                background-color: rgba(27, 136, 231, 0.416);
-            }
-        </style>
-        <script src="/js/jquery.min.js"></script>
-        <script src="/js/bootstrap3.min.js"></script>
-    </head>
-    <body>
-        <div class="container-fluid" id="peak-info-popup">
-            <div id="table-sheet">
-                <h3>Peaks</h3>
-                <table class="table table-bordered">
-                    <thead>
-                        <tr>
-                            <th>Peak</th>
-                            <th>X Axis</th>
-                            <th>Y Axis</th>
-                            <th>Z Axis</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>1</td>
-                            <td class="table-peak peak-1-val-wrap">----</td>
-                            <td class="table-peak peak-1-val-wrap">----</td>
-                            <td class="table-peak peak-1-val-wrap">----</td>
-                        </tr>
-                        <tr>
-                            <td>2</td>
-                            <td class="table-peak peak-2-val-wrap">----</td>
-                            <td class="table-peak peak-2-val-wrap">----</td>
-                            <td class="table-peak peak-2-val-wrap">----</td>
-                        </tr>
-                        <tr>
-                            <td>3</td>
-                            <td class="table-peak peak-3-val-wrap">----</td>
-                            <td class="table-peak peak-3-val-wrap">----</td>
-                            <td class="table-peak peak-3-val-wrap">----</td>
-                        </tr>
-                    </tbody>
-                </table>
+        .fft-plot-wrap {
+            margin-top: 1%;
+
+        }
+
+        .table-peak {
+            font-weight: bold;
+            font-size: small;
+        }
+
+        #peak-info-popup {
+            position: fixed;
+            /* Fixed position for the popup */
+            top: 5%;
+            /* Position at the top of the viewport */
+            left: 70%;
+            /* Position at the left corner of the viewport */
+            z-index: 1;
+            /* Ensure it appears above the main div content */
+            cursor: grab;
+            /* Change cursor to indicate draggable element */
+        }
+
+        #plot-content {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            /* Enable scrolling for the main div */
+        }
+
+        #table-sheet {
+            padding: 5%;
+            background-color: rgba(27, 136, 231, 0.416);
+        }
+
+        #header-info {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background-color: #f8f9fa;
+            /* Change the background color as needed */
+            z-index: 1000;
+            /* Ensure the navbar appears above other content */
+            padding: 10px 0;
+            /* Adjust padding as needed */
+        }
+
+        /* Add some spacing between buttons */
+        #header-info .col-md-12 button {
+            margin-right: 5px;
+        }
+
+        /* Center the buttons horizontally */
+        #header-info .col-md-12 {
+            text-align: center;
+        }
+
+        .table-peak {
+            font-size: 10px;
+        }
+
+        .mytable {
+            font-size: 10px;
+        }
+
+        /* #peak-info-popup {
+            display: none;
+        } */
+    </style>
+    <script src="/js/jquery.min.js"></script>
+    <script src="/js/bootstrap3.min.js"></script>
+</head>
+
+<body>
+    <!-- <div class="container-fluid" id="peak-info-popup">
+        <div id="table-sheet">
+            <h3>Peaks</h3>
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Peak</th>
+                        <th>X Axis</th>
+                        <th>Y Axis</th>
+                        <th>Z Axis</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>1</td>
+                        <td class="table-peak peak-1-val-wrap">----</td>
+                        <td class="table-peak peak-1-val-wrap">----</td>
+                        <td class="table-peak peak-1-val-wrap">----</td>
+                    </tr>
+                    <tr>
+                        <td>2</td>
+                        <td class="table-peak peak-2-val-wrap">----</td>
+                        <td class="table-peak peak-2-val-wrap">----</td>
+                        <td class="table-peak peak-2-val-wrap">----</td>
+                    </tr>
+                    <tr>
+                        <td>3</td>
+                        <td class="table-peak peak-3-val-wrap">----</td>
+                        <td class="table-peak peak-3-val-wrap">----</td>
+                        <td class="table-peak peak-3-val-wrap">----</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div> -->
+    <div class="container-fluid" id="plot-content">
+        <div class="row" id="header-info">
+            <div class="col-md-3">
+                <h5 id="recorded"></h5>
+            </div>
+            <div class="col-md-2">
+                <!-- <button id="btn-autoscroll" class="btn btn-primary" type="button">Auto scroll</button> -->
+                <button id="btn-x" class="btn btn-primary btn-md" type="button">X</button>
+                <button id="btn-y" class="btn btn-primary btn-md" type="button">Y</button>
+                <button id="btn-z" class="btn btn-primary btn-md" type="button">Z</button>
+                <button id="btn-download" class="btn btn-success" type="button">Download History</button>
+            </div>
+            <table class="table table-bordered mytable">
+                <thead>
+                    <tr>
+                        <th>Peak</th>
+                        <th>X Axis</th>
+                        <th>Y Axis</th>
+                        <th>Z Axis</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>1</td>
+                        <td class="table-peak peak-1-val-wrap">----</td>
+                        <td class="table-peak peak-1-val-wrap">----</td>
+                        <td class="table-peak peak-1-val-wrap">----</td>
+                    </tr>
+                    <tr>
+                        <td>2</td>
+                        <td class="table-peak peak-2-val-wrap">----</td>
+                        <td class="table-peak peak-2-val-wrap">----</td>
+                        <td class="table-peak peak-2-val-wrap">----</td>
+                    </tr>
+                    <tr>
+                        <td>3</td>
+                        <td class="table-peak peak-3-val-wrap">----</td>
+                        <td class="table-peak peak-3-val-wrap">----</td>
+                        <td class="table-peak peak-3-val-wrap">----</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <br><br><br><br><br><br>
+        <div class="row">
+            <div class="col-md-12 text-center">
+                <h3>Realtime Graph</h3>
             </div>
         </div>
-        <div class="container-fluid" id="plot-content">
-            <div class="row">
-                <div class="col-md-12 text-center">
-                    <h3>Realtime Graph</h3>
+        <div class="row">
+            <div class="col-md-12">
+                <div class="jumbotron jumbotron scrollable-div" style="height: 400px; overflow-y: auto;">
+                    <h3>Time Domain <button class="btn btn-disable">></button></h3>
+                    <div id='acc_graph' style="border-radius: 5%;"></div>
+                    <br>
+                    <div id='acc_graph_kalman' style="border-radius: 5%;"></div>
                 </div>
             </div>
-            <div class="row">
-                <div class="col-md-3" >
-                    <h5 id="recorded"></h5>
-                </div>
-                <div class="col-md-12" >
-                    <button id="btn-autoscroll" class="btn btn-primary" type="button">Auto scroll</button>
-                    <button id="btn-x" class="btn btn-primary btn-md" type="button">X</button>
-                    <button id="btn-y" class="btn btn-primary btn-md" type="button">Y</button>
-                    <button id="btn-z" class="btn btn-primary btn-md" type="button">Z</button>
-                    <button id="btn-download" class="btn btn-success" type="button">Download History</button>
-                </div>
-            </div>
-
-            <div class="row">   
-                <div class="col-md-12">
-                    <div class="jumbotron custom-jumbotron">
-                        <h3>Time Domain <button class="btn btn-disable">></button></h3>
-                        <div id='acc_graph' style="border-radius: 5%;"></div>
+        </div>
+        <div class="row">
+            <div class="jumbotron jumbotron scrollable-div" style="height: 400px; overflow-y: auto;">
+                <h3>Frequency Domain</h3>
+                <!-- Wrap the jumbotron content in a scrollable div -->
+                <div class="row">
+                    <div class="col-md-12 fft-plot-wrap">
+                        <div id='fft_graph_x' style="border-radius: 5%;"></div>
                     </div>
                 </div>
-            </div>
-
-            <div class="row">   
-                <div class="col-md-12">
-                    <div class="jumbotron custom-jumbotron">
-                        <h3>Frequency Domain</h3>
-                        <div class="row">
-                            <div class="col-md-6 fft-plot-wrap">
-                                <div id='fft_graph_x' style="border-radius: 5%;"></div>
-                            </div>
-                            <div class="col-md-6 fft-plot-wrap">
-                                <div id='fft_graph_y' style="border-radius: 5%;"></div>
-                            </div>
-                            <div class="col-md-6 fft-plot-wrap">
-                                <div id='fft_graph_z' style="border-radius: 5%;"></div>
-                            </div>
-                        </div>
+                <div class="row">
+                    <div class="col-md-12 fft-plot-wrap">
+                        <div id='fft_graph_y' style="border-radius: 5%;"></div>
                     </div>
                 </div>
-            </div>
-            
-            <div class="row">   
-                <div class="col-md-12">
-                    <div class="jumbotron custom-jumbotron">
-                        <h3>Time Domain History<button class="btn btn-disable">></button></h3>
-                        <div id='acc_history' style="border-radius: 5%;"></div>
+                <div class="row">
+                    <div class="col-md-12 fft-plot-wrap">
+                        <div id='fft_graph_z' style="border-radius: 5%;"></div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-12 fft-plot-wrap">
+                        <div id='fft_graph_x_kf' style="border-radius: 5%;"></div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-12 fft-plot-wrap">
+                        <div id='fft_graph_y_kf' style="border-radius: 5%;"></div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-12 fft-plot-wrap">
+                        <div id='fft_graph_z_kf' style="border-radius: 5%;"></div>
                     </div>
                 </div>
             </div>
         </div>
-    </body>
-    <script src="/js/fft_ws_com.js"></script>
-    <script>
-        var x = {
-	    	y: acc_data.x,
-	    	mode: 'lines',
-	    	type: 'scatter',
-	    	name: 'x',
-	    };
-        var y = {
-	    	y: acc_data.y,
-	    	mode: 'lines',
-	    	type: 'scatter',
-	    	name: 'x',
-	    };
-        var z = {
-	    	y: acc_data.z,
-	    	mode: 'lines',
-	    	type: 'scatter',
-	    	name: 'x',
-	    };
 
-        var fft_x = {
-	    	y: [],
-	    	mode: 'lines',
-	    	type: 'scatter',
-	    	name: 'x',
-	    };
-        var fft_y = {
-	    	y:[],
-	    	mode: 'lines',
-	    	type: 'scatter',
-	    	name: 'x',
-	    };
-        var fft_z = {
-	    	y: [],
-	    	mode: 'lines',
-	    	type: 'scatter',
-	    	name: 'x',
-	    };
-	    Plotly.newPlot('fft_graph_x', [fft_x,fft_y,fft_z], layout_fft.x, toolbar);
-        Plotly.newPlot('fft_graph_y', [fft_x,fft_y,fft_z], layout_fft.y, toolbar);
-        Plotly.newPlot('fft_graph_z', [fft_x,fft_y,fft_z], layout_fft.z, toolbar);
-    </script>
+
+        <div class="row">
+            <div class="col-md-12">
+                <div class="jumbotron custom-jumbotron">
+                    <h3>Time Domain History</h3>
+                    <button class="btn btn-primary" id="btn-toggle-history-show">Show</button>
+                    <div id='acc_history' style="border-radius: 5%;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+<script src="/js/fft_ws_com.js"></script>
+
 </html>

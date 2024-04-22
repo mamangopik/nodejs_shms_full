@@ -3,6 +3,7 @@ const mqtt = require('mqtt')
 
 //global variable for acc_data
 var acc_data = {}
+var log_info = {}
 var single_data = {}
 var nodes_log_raw = {};
 var device_properties = {}
@@ -186,12 +187,20 @@ class Mqtt_handler {
     }
 
     update_acc_data = async (topic, payload, time_data, data_to_log) => {
-        if (nodes_log_raw[topic] == 1) {
-            this.log_acc_data(data_to_log);
-        }
+
         acc_data[topic] = {};
         acc_data[topic] = payload;
         acc_data[topic].timestamp = time_data;
+
+        if (nodes_log_raw[topic] == 1) {
+            this.log_acc_data(data_to_log).then(() => {
+                log_info[topic] = new Date().getTime();
+                this.io.local.emit(`${topic}_info`, log_info[topic]);
+            })
+        } else {
+            log_info[topic] = 0;
+            this.io.local.emit(`${topic}_info`, log_info[topic]);
+        }
         payload = {
             topic: topic,
             data: acc_data[topic]

@@ -12,7 +12,8 @@ docs:
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>API Access</title>
+    <link rel="icon" href="/images/favicon.png">
+    <title>Log Viewer</title>
     <!-- Bootstrap 3 CDN -->
     <link rel="stylesheet" href="/css/bootstrap3.min.css">
     <script src='/js/plotly.min.js'></script>
@@ -146,38 +147,203 @@ docs:
     </div>
 
     <script>
+        var fft_plot_heigh = 300;
+        var layout_fft = {
+            'x': {
+                height: fft_plot_heigh,
+                autosize: true,
+                yaxis: {
+                    title: 'mag',
+                },
+                xaxis: {
+                    title: 'freq'
+                },
+                annotations: [],
+                showlegend: true,
+                margin: { // Set the margin to zero
+                    l: 50,
+                    r: 0,
+                    t: 0,
+                    b: 50,
+                    pad: 0
+                }
+            },
+            'y': {
+                height: fft_plot_heigh,
+                autosize: true,
+                yaxis: {
+                    title: 'mag',
+                },
+                xaxis: {
+                    title: 'freq'
+                },
+                annotations: [],
+                showlegend: true,
+                margin: { // Set the margin to zero
+                    l: 50,
+                    r: 0,
+                    t: 0,
+                    b: 50,
+                    pad: 0
+                }
+            },
+            'z': {
+                height: fft_plot_heigh,
+                autosize: true,
+                yaxis: {
+                    title: 'mag',
+                },
+                xaxis: {
+                    title: 'freq'
+                },
+                annotations: [],
+                showlegend: true,
+                margin: { // Set the margin to zero
+                    l: 50,
+                    r: 0,
+                    t: 0,
+                    b: 50,
+                    pad: 0
+                }
+            }
+        }
         var acc_to_send = {};
         var acc_to_send_status = 0;
         var download_ready = false;
         const urlParams = new URLSearchParams(window.location.search);
-        const python_ws_addr = window.location.host.replace(':7777', '');
+        const ws_addr = window.location.host.replace(':7777', '');
         const device_id = urlParams.get('id');
-        const brokerUrl = python_ws_addr//'ws://192.168.15.54:9001';
+        const brokerUrl = ws_addr//'ws://192.168.15.54:9001';
         const clientId = "mqtt_publisher_" + Math.random().toString(16).substr(2, 8);
 
-        console.log(brokerUrl, python_ws_addr)
+
 
         var mqtt;
         var reconnectTimeout = 2000;
-        var host = "brains.local";
+        var host = ws_addr;
         var port = 9001;
+
+        const get_peak_label = (x, y, index) => {
+            let html =
+                `<b style="font-size:16px">` +
+                `Peak${index}` +
+                `</b>` +
+                `<br>` +
+                `<b style="font-size:12px">` +
+                `${x}Hz` +
+                `</b>` +
+                `<br>` +
+                `<b style="font-size:12px">` +
+                `${y} mG` +
+                `</b>`
+            return html;
+        }
 
         function onConnect() {
             console.log("Connected");
-            mqtt.subscribe("/shms/node_3/accelerometer");
+            mqtt.subscribe(`/shms/convert/fft/${clientId}`);
         }
-
+        async function draw_fft(div, plotdata, peaks, layout) {
+            let i = 1;
+            peaks.forEach(peak => {
+                const annotation = {
+                    x: parseFloat(peak[0]),
+                    y: parseFloat(peak[1]),
+                    text: get_peak_label(parseFloat(peak[0]).toFixed(4), parseFloat(peak[1]).toFixed(4), i),
+                    showarrow: true,
+                    arrowhead: 2,
+                    ax: 0,
+                    ay: -50,
+                    font: {
+                        family: 'Courier New, monospace',
+                        size: 16,
+                        color: '#ffffff'
+                    },
+                    align: 'center',
+                    bordercolor: '#c7c7c7',
+                    borderwidth: 2,
+                    borderpad: 4,
+                    bgcolor: 'red',
+                    opacity: 0.7
+                };
+                layout.annotations.push(annotation);
+                i++;
+            });
+            Plotly.newPlot(div, [plotdata], layout);
+            layout.annotations = [];
+        }
         function onMessageArrived(message) {
             let mqtt_payload = {
                 'topic': message.destinationName,
                 message: message.payloadString
             }
-            console.log(mqtt_payload);
+            let data = JSON.parse(mqtt_payload.message);
+            let fft_data = data.data;
+            let peaks = data.peaks;
+
+            var fft_x = {
+                x: fft_data.x.frequency,
+                y: fft_data.x.magnitude,
+                mode: 'lines',
+                type: 'scatter',
+                name: 'x',
+                line: {
+                    color: 'rgb(0, 0, 255)',
+                    width: 2
+                }
+            };
+            var fft_y = {
+                x: fft_data.y.frequency,
+                y: fft_data.y.magnitude,
+                mode: 'lines',
+                type: 'scatter',
+                name: 'y',
+                line: {
+                    color: 'rgb(0, 255, 0)',
+                    width: 2
+                }
+            };
+            var fft_z = {
+                x: fft_data.z.frequency,
+                y: fft_data.z.magnitude,
+                mode: 'lines',
+                type: 'scatter',
+                name: 'z',
+                line: {
+                    color: 'rgb(255, 0, 0)',
+                    width: 2
+                }
+            };
+            draw_fft('fft_graph_x', fft_x, peaks.x, layout_fft.x);
+            draw_fft('fft_graph_y', fft_y, peaks.y, layout_fft.y);
+            draw_fft('fft_graph_z', fft_z, peaks.z, layout_fft.z);
+        }
+
+        // Event handler for connection failure
+        function onFailure(err) {
+            console.error("Failed to connect to MQTT broker:", err.errorMessage);
+            // Retry connection after a delay
+            setTimeout(() => {
+                mqtt.connect({ onSuccess: onConnect, onFailure: onFailure });
+            }, 5000); // Retry every 5 seconds
+        }
+
+        // Event handler for connection loss
+        function onConnectionLost(responseObject) {
+            if (responseObject.errorCode !== 0) {
+                console.error("Connection lost:", responseObject.errorMessage);
+                // Attempt automatic reconnection
+                setTimeout(() => {
+                    mqtt.connect({ onSuccess: onConnect, onFailure: onFailure });
+                }, 1000); // Retry every 5 seconds
+            }
         }
 
         console.log("Connecting to " + host + ":" + port);
         mqtt = new Paho.MQTT.Client(host, port, clientId);
         mqtt.onMessageArrived = onMessageArrived;
+        mqtt.onConnectionLost = onConnectionLost;
+
         var options = {
             timeout: 3,
             onSuccess: onConnect,
@@ -186,7 +352,7 @@ docs:
         mqtt.connect(options);
 
         var acc_data = {
-            x: [], y: [], z: [], time_data: []
+            x: [], y: [], z: [], time_data: [], n: []
         };
         var timm = [];
         var iterated_acc_data = [];
@@ -214,6 +380,16 @@ docs:
             const unixTimestampInSeconds = Math.floor(unixTimestamp);
 
             return unixTimestampInSeconds;
+        }
+
+        function downsampleArray(data, targetSize) {
+            // Calculate downsampling factor
+            const factor = Math.floor(data.length / targetSize);
+
+            // Downsample the array by taking every nth element
+            const downsampledData = data.filter((_, index) => index % factor === 0);
+
+            return downsampledData;
         }
 
         const draw_acc = async (data) => {
@@ -256,47 +432,49 @@ docs:
                 });
                 pointer++;
             });
+            console.log("len of data", data.x.length);
+            console.log("len of time", timm.length);
             const trace1 = {
                 x: timm,
                 y: data.x,
                 type: 'scatter',
-                mode: 'lines',
+                mode: 'scatter',
                 name: 'X'
             };
             const trace2 = {
                 x: timm,
                 y: data.y,
                 type: 'scatter',
-                mode: 'lines',
+                mode: 'scatter',
                 name: 'Y'
             };
             const trace3 = {
                 x: timm,
                 y: data.z,
                 type: 'scatter',
-                mode: 'lines',
+                mode: 'scatter',
                 name: 'Z'
             };
             const layout = {
                 title: 'Acceleration Data',
-                height: 600,
+                height: 400,
                 showlegend: true,
                 yaxis: {
                     autorange: true
                 }
             };
             const plot_data = [trace1, trace2, trace3];
-            Plotly.newPlot('plot', plot_data, layout);
+            Plotly.newPlot('plot', plot_data, layout, { renderer: 'webgl' });
             download_ready = true;
 
             console.log("making event")
             var graphDiv = document.getElementById('plot');
-            graphDiv.on('plotly_relayout', function (eventdata) {
+            graphDiv.on('plotly_relayout', async (eventdata) => {
                 console.log("aa");
                 var gd = document.getElementById('plot');
                 var xRange = gd.layout.xaxis.range;
                 var yRange = gd.layout.yaxis.range;
-                gd.data.forEach(function (trace) {
+                gd.data.forEach((trace) => {
                     // console.log(trace);
                     var len = Math.min(trace.x.length, trace.y.length)
                     var xInside = []
@@ -315,41 +493,12 @@ docs:
                     }
                     acc_to_send[trace['name']] = yInside;
                 });
-                console.log(acc_to_send)
+                // console.log(acc_to_send)
             })
         };
 
-        const draw_fft = async (div, layout, data, peaks) => {
-            let i = 1;
-            peaks.forEach(peak => {
-                // console.log(peak);
-                const annotation = {
-                    x: parseFloat(peak[0]),
-                    y: parseFloat(peak[1]),
-                    text: get_peak_label(parseFloat(peak[0]).toFixed(4), parseFloat(peak[1]).toFixed(4), i),
-                    showarrow: true,
-                    arrowhead: 2,
-                    ax: 0,
-                    ay: -50,
-                    font: {
-                        family: 'Courier New, monospace',
-                        size: 16,
-                        color: '#ffffff'
-                    },
-                    align: 'center',
-                    bordercolor: '#c7c7c7',
-                    borderwidth: 2,
-                    borderpad: 4,
-                    bgcolor: data.line.color,
-                    opacity: 0.7
-                };
-                layout.annotations.push(annotation);
-                i++;
-            });
-            Plotly.newPlot(div, [data], layout);
-            layout.annotations = [];
-        }
 
+        let counter = 1;
         const getData = async () => {
             document.getElementById("loading-animation").style.visibility = 'visible';
             document.getElementById("btn-download").style.visibility = 'hidden';
@@ -373,9 +522,12 @@ docs:
                         acc_data.y.push(...log_data.y_values);
                         acc_data.z.push(...log_data.z_values);
                         time_data.forEach(element => {
+                            acc_data.n.push(counter);
+                            counter++;
                             acc_data.time_data.push((parseInt(element) * 1000));
                         });
                     });
+                    console.log("len of data", acc_data.x.length);
                     draw_acc(acc_data);
                 } else {
                     console.warn("error to get data from API");
@@ -416,25 +568,27 @@ docs:
 
         window.onload = getData;
 
-
-        let fft_beacon = setInterval(() => {
-            try {
-                if (acc_to_send_status == 1) {
-                    acc_to_send_status = 0;
-                    if (ws.send(JSON.stringify(acc_to_send))) {
-                        console.log("sent")
-                    }
-                    // console.log(JSON.stringify(acc_to_send))
-                }
-            } catch (error) {
-                console.log(error);
-            }
-        }, 300);
-
         document.getElementById('btn-download').onclick = () => {
             download_ready = false;
             download();
         };
+
+        acc_to_send.cid = clientId;
+        acc_to_send.fs = 50;
+        acc_to_send.peaks_req = 6;
+        document.getElementById("btn-calculate").onclick = () => {
+            if (mqtt.isConnected()) {
+                // Create a new MQTT message
+                const mqttMessage = new Paho.MQTT.Message(JSON.stringify(acc_to_send));
+                mqttMessage.destinationName = "/shms/convert/acc";
+                // Send the MQTT message
+                mqtt.send(mqttMessage);
+            } else {
+                // Handle the case when the MQTT client is not connected
+                console.error("MQTT client is not connected");
+                // You may want to display an error message to the user or attempt to reconnect
+            }
+        }
 
     </script>
 </body>

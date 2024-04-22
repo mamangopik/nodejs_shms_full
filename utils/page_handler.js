@@ -19,11 +19,6 @@ class Page_handler {
             res.sendFile(static_view);
         });
 
-        app.get('/logger_data', async (req, res) => {
-            const static_view = view_path + 'logger_data_list.html';
-            res.sendFile(static_view);
-        });
-
         app.get('/logger_data/direct', async (req, res) => {
             const static_view = view_path + 'logger_data.html';
             res.sendFile(static_view);
