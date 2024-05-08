@@ -1,192 +1,203 @@
 <html>
-    <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <link rel="icon" href="/images/favicon.png">
-        <!-- Load Bootstrap 3 CSS -->
-        <link rel="stylesheet" href="/css/bootstrap3.min.css">
-        <!-- Load Plotly.js into the DOM -->
-        <script src='/js/plotly.min.js'></script>
-        <script src="/js/socket-io.min.js"></script>
-        <style>
-            .row.display-flex {
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="/images/favicon.png">
+    <!-- Load Bootstrap 3 CSS -->
+    <link rel="stylesheet" href="/css/bootstrap3.min.css">
+    <!-- Load Plotly.js into the DOM -->
+    <script src='/js/plotly.min.js'></script>
+    <script src="/js/socket-io.min.js"></script>
+    <style>
+        .row.display-flex {
             display: flex;
             flex-wrap: wrap;
-            }
-            .row.display-flex > [class*='col-'] {
+        }
+
+        .row.display-flex>[class*='col-'] {
             display: flex;
             flex-direction: column;
-            }
-            h1 {
-                text-align: center;
-                margin-bottom: 5%;
-            }
-            .list-group-item {
-                background: linear-gradient(to bottom, #168bff, #61b2fd); /* Change these colors */
-            }
-            .container-fluid {
-                height: 100%;
-            }
-            /* Styles for the container */
-            .toggle-switch-container {
-                display: flex;
-                align-items: center;
-            }
+        }
 
-            /* Hide the default checkbox input */
-            .toggle-switch-container input[type="checkbox"] {
-                display: none;
-            }
+        h1 {
+            text-align: center;
+            margin-bottom: 5%;
+        }
 
-            /* Style the label as the toggle switch */
-            .toggle-switch {
-                width: 60px;
-                height: 30px;
-                background-color: #ccc;
-                border-radius: 15px;
-                position: relative;
-                cursor: pointer;
-            }
+        .list-group-item {
+            background: linear-gradient(to bottom, #168bff, #61b2fd);
+            /* Change these colors */
+        }
 
-            /* Style the switch handle */
-            .toggle-switch-handle {
-                width: 30px;
-                height: 30px;
-                border-radius: 50%;
-                background-color: #fff;
-                position: absolute;
-                top: 0;
-                transition: 0.3s;
-            }
+        .container-fluid {
+            height: 100%;
+        }
+
+        /* Styles for the container */
+        .toggle-switch-container {
+            display: flex;
+            align-items: center;
+        }
+
+        /* Hide the default checkbox input */
+        .toggle-switch-container input[type="checkbox"] {
+            display: none;
+        }
+
+        /* Style the label as the toggle switch */
+        .toggle-switch {
+            width: 60px;
+            height: 30px;
+            background-color: #ccc;
+            border-radius: 15px;
+            position: relative;
+            cursor: pointer;
+        }
+
+        /* Style the switch handle */
+        .toggle-switch-handle {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background-color: #fff;
+            position: absolute;
+            top: 0;
+            transition: 0.3s;
+        }
+    </style>
+    <script src="/js/jquery.min.js"></script>
+    <script src="/js/bootstrap3.min.js"></script>
 
 
 
-        </style>
-        <script src="/js/jquery.min.js"></script>
-        <script src="/js/bootstrap3.min.js"></script>
+</head>
 
-        
-
-    </head>
-    <body>
-        <nav class="navbar navbar-default">
-            <div class="container">
-                <!-- Navbar Header -->
-                <div class="navbar-header">
-                    <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar-collapse">
-                        <span class="sr-only">Toggle navigation</span>
-                        <span class="icon-bar"></span>
-                        <span class="icon-bar"></span>
-                        <span class="icon-bar"></span>
-                    </button>
-                </div>
-    
-                <!-- Navbar Links -->
-                <div class="collapse navbar-collapse" id="navbar-collapse">
-                    <ul class="nav navbar-nav">
-                        <li class="active"><a id="url-device" href="">Devices</a></li>
-                    </ul>
-                    <ul class="nav navbar-nav">
-                        <li class=""><a id="url-setup" href="">Config</a></li>
-                    </ul>
-    
-                    <!-- Logout Button -->
-                    <ul class="nav navbar-nav navbar-right">
-                        <li><a href="#" id="btn-logout">Logout</a></li>
-                    </ul>
-                </div>
-            </div>
-        </nav>
-
+<body>
+    <nav class="navbar navbar-default">
         <div class="container">
-            <div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
-                <div class="modal-dialog" role="document">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h3 class="modal-title" id="edit-modal-lbl"></h3>
-                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                <span aria-hidden="true">&times;</span>
-                            </button>
-                        </div>
-                        <div class="modal-body">
-                            <form>
-                                <div class="form-group">
-                                    <label for="tb_name">Name:</label>
-                                    <input type="text" class="form-control" id="tb_name">
-                                </div>
-                                <div class="row" id="acc-toggle-switch" style="margin-left: 10px;">
-                                    <label id="toggle-switch-label">Log Raw Data (For Load Test)</label>
-                                    <div class="toggle-switch-container">  
-                                        <label class="toggle-switch">
-                                            <input type="checkbox" id="myToggle">
-                                            <div class="toggle-switch-handle"></div>
-                                        </label>
-                                    </div>
-                                    <br>
-                                </div>
-                                <div class="form-group">
-                                    <label for="tb_type">Type:</label>
-                                    <select class="form-control" id="tb_type">
-                                        <option value="accelerometer">Accelerometer</option>
-                                        <option value="single_data">Strain Gauge</option>
-                                        <option value="single_data">Displacement</option>
-                                        <option value="single_data">Temperature</option>
-                                    </select>
-                                </div>
-                                
-                                <div class="form-group">
-                                    <label for="tb_topic">Topic:</label>
-                                    <input type="text" class="form-control" id="tb_topic">
-                                </div>
-                            </form>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-dismiss="modal" id="btn-cancel">Close</button>
-                            <button type="button" class="btn btn-primary" id="btn-save">Save changes</button>
-                        </div>
-                    </div>
-                </div>
+            <!-- Navbar Header -->
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle collapsed" data-toggle="collapse"
+                    data-target="#navbar-collapse">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
             </div>
 
-            <div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
-                <div class="modal-dialog" role="document">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title" id="modal-lbl"></h5>
-                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                <span aria-hidden="true">&times;</span>
-                            </button>
-                        </div>
-                        <div class="modal-body">
-                            <form>
-                                <div class="form-group">
-                                    <h2 id="node_id_to_delete"></h2>
-                                    <input type="text" id="tb_node_id_to_delete" style="display: none;">
-                                </div>
-                            </form>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-dismiss="modal" id="btn-cancel-remove">Close</button>
-                            <button type="button" class="btn btn-danger" id="btn-confirm-delete">Remove</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <h1>
-                Devices
-            </h1>
-            <div class="row" >
-                <div class="col-md-12" >
-                    <a href="#add" class="jumbotron" data-toggle="modal" data-target="#exampleModal" id="btn-add">
-                        <img width="100" height="100" src="/images/add.png" alt="add">
-                        <h2 style="display: inline;">Add Node</h2>
-                    </a>
-                </div>
-            </div>
-            <br><br>
-            <div class="row" id = "device-containers">
+            <!-- Navbar Links -->
+            <div class="collapse navbar-collapse" id="navbar-collapse">
+                <ul class="nav navbar-nav">
+                    <li class="active"><a id="url-device" href="">Devices</a></li>
+                </ul>
+                <ul class="nav navbar-nav">
+                    <li class=""><a id="url-setup" href="">Config</a></li>
+                </ul>
+
+                <!-- Logout Button -->
+                <ul class="nav navbar-nav navbar-right">
+                    <li><a href="#" id="btn-logout">Logout</a></li>
+                </ul>
             </div>
         </div>
-    </body>
-    <script src="/js/devices.js"> </script>
+    </nav>
+
+    <div class="container">
+        <div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+            aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3 class="modal-title" id="edit-modal-lbl"></h3>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <form>
+                            <div class="form-group">
+                                <label for="tb_name">Name:</label>
+                                <input type="text" class="form-control" id="tb_name">
+                            </div>
+                            <div class="row" id="acc-toggle-switch" style="margin-left: 10px;">
+                                <label id="toggle-switch-label">Log Raw Data (For Load Test)</label>
+                                <div class="toggle-switch-container">
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" id="myToggle">
+                                        <div class="toggle-switch-handle"></div>
+                                    </label>
+                                </div>
+                                <br>
+                            </div>
+                            <div class="form-group">
+                                <label for="tb_type">Type:</label>
+                                <select class="form-control" id="tb_type">
+                                    <option value="accelerometer">Accelerometer</option>
+                                    <option value="single_data">Strain Gauge</option>
+                                    <option value="single_data">Displacement</option>
+                                    <option value="single_data">Temperature</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="tb_topic">Topic:</label>
+                                <input type="text" class="form-control" id="tb_topic">
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal"
+                            id="btn-cancel">Close</button>
+                        <button type="button" class="btn btn-primary" id="btn-save">Save changes</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+            aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="modal-lbl"></h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <form>
+                            <div class="form-group">
+                                <h2 id="node_id_to_delete"></h2>
+                                <input type="text" id="tb_node_id_to_delete" style="display: none;">
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal"
+                            id="btn-cancel-remove">Close</button>
+                        <button type="button" class="btn btn-danger" id="btn-confirm-delete">Remove</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <h1>
+            Devices
+        </h1>
+        <div class="row">
+            <div class="col-md-12">
+                <a href="#add" class="jumbotron" data-toggle="modal" data-target="#exampleModal" id="btn-add">
+                    <img width="100" height="100" src="/images/add.png" alt="add">
+                    <h2 style="display: inline;">Add Node</h2>
+                </a>
+            </div>
+        </div>
+        <br><br>
+        <div class="row" id="device-containers">
+        </div>
+    </div>
+</body>
+<script src="/js/devices.js"> </script>
+
 </html>

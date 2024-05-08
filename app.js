@@ -4,6 +4,8 @@ db_host = process.env.DB_HOST
 db_user = process.env.DB_USER
 db_pwd = process.env.DB_PWD
 db_name = process.env.DB_NAME
+
+mqtt_broker = process.env.MQTT_BROKER
 const Database = require('./model/database');
 // const sqlite = require('./model/sqlitedb');
 const db = new Database(db_host, db_user, db_pwd, db_name);
@@ -37,19 +39,18 @@ app.all('/', function (request, response, next) {
     next();
 });
 
-
-const viewpath = __dirname+'/static/';
+const viewpath = __dirname + '/static/';
 const Page = require('./utils/page_handler');
-const Page_handler = new Page(app,express,path,viewpath);
+const Page_handler = new Page(app, express, path, viewpath);
 
-const server = app.listen(app_port,()=>{
-    console.log("server listening on port",app_port)
+const server = app.listen(app_port, () => {
+    console.log("server listening on port", app_port)
 });
 
 const Mqtt_handler = require('./utils/mqtt_handler');
-const mqtt_handler = new Mqtt_handler(server,db);
+const mqtt_handler = new Mqtt_handler(server, db, mqtt_broker);
 
 const API = require('./utils/API_handler');
-const API_handler = new API(app,db,mqtt_handler);
+const API_handler = new API(app, db, mqtt_handler);
 
 

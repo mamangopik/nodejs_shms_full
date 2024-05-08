@@ -10,8 +10,10 @@ var device_properties = {}
 
 
 class Mqtt_handler {
-    constructor(server, db) {
+    constructor(server, db, broker) {
         this.db = db;
+        this.broker = broker;
+        console.log(this.broker);
         //ws setup
         this.io = socket(server);
         //ws functions
@@ -19,7 +21,7 @@ class Mqtt_handler {
             console.log('got connection');
         })
 
-        this.host = 'localhost';
+        this.host = this.broker;
         this.port = '1883';
         this.clientId = `mqtt_${Math.random().toString(16).slice(3)}`;
         this.connectUrl = `mqtt://${this.host}:${this.port}`;
@@ -37,8 +39,8 @@ class Mqtt_handler {
                     this.client.subscribe([device.topic], () => {
                         nodes_log_raw[device.topic] = device.log_raw;
                         console.log(`Subscribe to topic '${device.topic}'`);
-                        this.client.publish(device.topic, ' ', { qos: 0, retain: false });
-                        //check the table is exist or not
+                        // this.client.publish(device.topic, ' ', { qos: 0, retain: false });
+                        //check the table is exist or not 
                         console.log(device.id);
                         this.db.device_model.device_has_table(device.id).then((clbk) => {
                             if (clbk == 1) {
@@ -75,26 +77,49 @@ class Mqtt_handler {
 
                     obj['time_data'] = [];
                     for (let i = 0; i < data_len; i++) {
-                        let time_to_push = time_data_in - ((data_len - i) * 0.02); //for 5ms sampling delay (200Hz)
+                        let time_to_push = time_data_in - ((data_len - i) * 0.005); //for 5ms sampling delay (200Hz)
                         obj.time_data.push(time_to_push);
                     }
-                    this.update_acc_data(unparsed_topic, payload, obj.time_data, obj)
+		    new Promise(()=>{
+			this.update_acc_data(unparsed_topic, payload, obj.time_data, obj)
+		    });
+                    //this.update_acc_data(unparsed_topic, payload, obj.time_data, obj)
                 }
 
                 if (payload['sensor_type'] == 'single_data') {
-                    let sensor_data = payload.value;
+                    let sensor_data = payload.values;
+                    let kf_sensor_data = payload.kf_values;
                     let timestamp = (new Date().getTime() / 1000);
                     let data = {
-                        value: payload.value,
+                        values: {
+                            raw: sensor_data,
+                            filtered: kf_sensor_data
+                        },
                         timestamp: timestamp,
-                        label: payload.label,
+                        label: payload.label + '@' + topic,
                         topic: unparsed_topic
                     }
-                    console.log(data);
                     this.update_single_data(unparsed_topic, data, timestamp)
-                    this.db.logger_model.log_single_data(data).then(() => {
-                        console.log("data logged to local DB");
-                    });
+                    let device_to_log = {}
+                    let data_to_log = {}
+                    device_properties.forEach(device => {
+                        if (device.topic == unparsed_topic) {
+                            device_to_log = device;
+                        }
+                    })
+
+                    if (device_to_log.log_raw == 1) {
+                        data_to_log['node'] = device_to_log.id
+                        data_to_log['meassurement_data'] = data;
+                        this.db.device_model.device_has_table(device_to_log.id).then((clbk) => {
+                            if (clbk == 1) {
+                                this.db.logger_model.log_single_data(device_to_log.id, data_to_log);
+                            } else {
+                                this.db.device_model.create_device_table(device_to_log.id);
+                            }
+                        })
+                    }
+
                 }
 
             } catch (error) {
@@ -183,8 +208,17 @@ class Mqtt_handler {
         })
         data_to_log['node'] = device_to_log.id
         // console.log(device_to_log.topic,device_to_log.id);
-        this.db.logger_model.log_data(device_to_log.id, data_to_log);
+
+        this.db.device_model.device_has_table(device_to_log.id).then((clbk) => {
+            if (clbk == 1) {
+                this.db.logger_model.log_acc_array_data(device_to_log.id, data_to_log);
+            } else {
+                this.db.device_model.create_device_table(device_to_log.id);
+            }
+        })
+
     }
+
 
     update_acc_data = async (topic, payload, time_data, data_to_log) => {
 
@@ -192,26 +226,28 @@ class Mqtt_handler {
         acc_data[topic] = payload;
         acc_data[topic].timestamp = time_data;
 
+        this.update_acc_data_stream(payload);
+        this.io.local.emit(topic, acc_data[topic]);
+
         if (nodes_log_raw[topic] == 1) {
             this.log_acc_data(data_to_log).then(() => {
                 log_info[topic] = new Date().getTime();
                 this.io.local.emit(`${topic}_info`, log_info[topic]);
             })
         } else {
-            log_info[topic] = 0;
+            log_info[topic] = undefined;
             this.io.local.emit(`${topic}_info`, log_info[topic]);
         }
         payload = {
             topic: topic,
             data: acc_data[topic]
         }
-        this.update_acc_data_stream(payload);
-        this.io.local.emit(topic, acc_data[topic]);
     }
 
     update_single_data = async (topic, sensor_data, timestamp) => {
         single_data[topic] = {};
         single_data[topic] = sensor_data;
+        // console.log(single_data[topic])
         this.io.local.emit(topic, single_data[topic]);
     }
 }

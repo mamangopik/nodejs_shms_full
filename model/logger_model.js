@@ -2,13 +2,14 @@ class Logger_model {
   constructor(pool) {
     this.pool = pool;
   }
-  log_single_data = async (data) => {
-    const meassurement_data = data.value;
-    const timestamp_data = data.timestamp;
-    const variable_name = data.label;
-    const topic = data.topic;
-    const query = `INSERT INTO single_data_log (value, topic, variable_name,timestamp)
-                        VALUES (${parseFloat(meassurement_data)},'${topic}','${variable_name}',${timestamp_data}); `;
+  log_single_data = async (table_name, payload) => {
+    const meassurement_data = JSON.stringify(payload.meassurement_data.values);
+    const timestamp_data = JSON.stringify(payload.meassurement_data.timestamp);
+    // console.log(meassurement_data);
+    // console.log(timestamp_data);
+    const query = `INSERT INTO ${table_name} (unix_timestamp, json, node, time_data)
+                         VALUES (${parseInt(timestamp_data)},'${meassurement_data}','${payload.node}','${timestamp_data}'); `;
+    // console.log(payload);
     const result = await this.pool.query(query);
     console.log('data logged');
     return 1;
@@ -45,7 +46,7 @@ class Logger_model {
     return result[0][0]['count(*)'];
   }
 
-  log_data = async (table_name, payload) => {
+  log_acc_array_data = async (table_name, payload) => {
     const meassurement_data = JSON.stringify(payload.meassurement_data);
     const timestamp_data = JSON.stringify(payload.time_data);
     const query = `INSERT INTO ${table_name} (unix_timestamp, json, node, time_data)

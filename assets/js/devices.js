@@ -216,11 +216,6 @@ const draw_node_list = () => {
 								log_raw_data_buf = 0;
 							}
 						});
-						if (edit_prop.type[index] == "accelerometer") {
-							document.getElementById("acc-toggle-switch").style.display = 'inline-block';
-						} else {
-							document.getElementById("acc-toggle-switch").style.display = 'none';
-						}
 
 						if (edit_prop.log_raw[index] == 1) {
 							toggleSwitch.checked = true;

@@ -116,18 +116,28 @@ docs:
     </div>
     <div class="container-fluid" id="content">
         <div class="row">
-            <h1 class="text-center">Acceleration Data</h1>
+            <h1 class="text-center" id="instrument-label">Data of </h1>
         </div>
         <div class="row">
             <div class="col-md-12">
                 <button id="btn-download" class="btn btn-success" type="button">Download History</button>
+                <button id="btn-autoscale" class="btn btn-primary" type="button">Autoscale</button>
             </div>
         </div>
         <div class="row">
             <div class="col-md-12">
                 <div id="plot"></div>
             </div>
+            <div class="col-md-12">
+                <input type="range" id="slider-position" class="form-control"
+                    style="margin-top: 100px; margin-bottom: 100px;display: inline;">
+            </div>
         </div>
+        <div class="row">
+            <div class="col-md-12">
+            </div>
+        </div>
+
         <div class="row">
             <div class="col-md-12">
                 <button id="btn-calculate" class="btn btn-primary" type="button">Calculate FFT</button>
@@ -349,14 +359,16 @@ docs:
             onSuccess: onConnect,
         };
 
-        mqtt.connect(options);
 
         var acc_data = {
             x: [], y: [], z: [], time_data: [], n: []
         };
+        var single_data = {
+            raw: [], filtered: [], time_data: [], n: []
+        };
         var timm = [];
         var iterated_acc_data = [];
-        const loggingFrequency = 20;
+        const loggingFrequency = (1 / acc_to_send.fs) * 1000;
         let currentIndex = 0;
 
         const calculateLostDataPoints = async (dataLog, loggingFrequency) => {
@@ -392,16 +404,43 @@ docs:
             return downsampledData;
         }
 
-        const draw_acc = async (data) => {
-            download_ready = false;
-            const lostDataPoints = await calculateLostDataPoints(acc_data, loggingFrequency);
+        const draw_single_data = async (data, start, stop) => {
+            const trace1 = {
+                x: data.time_data.slice(start, stop),
+                y: data.raw.slice(start, stop),
+                type: 'scatter',
+                mode: 'scatter',
+                name: 'Unfiltered'
+            };
+            const trace2 = {
+                x: data.time_data.slice(start, stop),
+                y: data.filtered.slice(start, stop),
+                type: 'scatter',
+                mode: 'scatter',
+                name: 'Filtered'
+            };
+            const layout = {
+                title: `${document.getElementById("instrument-label").innerText}`,
+                height: 600,
+                showlegend: true,
+                yaxis: {
+                    autorange: true
+                }
+            };
+            const plot_data = [trace1, trace2];
+            Plotly.newPlot('plot', plot_data, layout);
+            download_ready = true;
+        }
+
+        const alloc_timm = (data) => {
+            const lostDataPoints = calculateLostDataPoints(acc_data, loggingFrequency);
             // console.log(lostDataPoints);
             timedata = data.time_data;
             t0 = 1698747809398;
             timedata = [];
             // console.log(data.time_data.length);
             for (let i = 0; i < data.time_data.length; i++) {
-                ts = t0 + (20 * i);
+                ts = t0 + (((1 / acc_to_send.fs) * 1000) * i);
                 timedata.push(new Date(ts));
             }
             // console.log("my data", acc_data.time_data.length);
@@ -421,7 +460,7 @@ docs:
                 if (pointer == 0) {
                     first_ts = element;
                 }
-                ts = first_ts + (i * 20);
+                ts = first_ts + (i * ((1 / acc_to_send.fs) * 1000));
                 timm.push(new Date(ts));
                 i++;
                 gap_start.forEach(gap => {
@@ -432,39 +471,48 @@ docs:
                 });
                 pointer++;
             });
+        }
+
+        const draw_acc = async (data, start, stop) => {
+            download_ready = false;
             console.log("len of data", data.x.length);
             console.log("len of time", timm.length);
             const trace1 = {
-                x: timm,
-                y: data.x,
+                x: timm.slice(start, stop),
+                y: data.x.slice(start, stop),
                 type: 'scatter',
                 mode: 'scatter',
                 name: 'X'
             };
             const trace2 = {
-                x: timm,
-                y: data.y,
+                x: timm.slice(start, stop),
+                y: data.y.slice(start, stop),
                 type: 'scatter',
                 mode: 'scatter',
                 name: 'Y'
             };
             const trace3 = {
-                x: timm,
-                y: data.z,
+                x: timm.slice(start, stop),
+                y: data.z.slice(start, stop),
                 type: 'scatter',
                 mode: 'scatter',
                 name: 'Z'
             };
             const layout = {
                 title: 'Acceleration Data',
-                height: 400,
+                height: 600,
                 showlegend: true,
                 yaxis: {
                     autorange: true
                 }
             };
+
+            acc_to_send[trace1.name] = trace1.y;
+            acc_to_send[trace2.name] = trace2.y;
+            acc_to_send[trace3.name] = trace3.y;
+
             const plot_data = [trace1, trace2, trace3];
-            Plotly.newPlot('plot', plot_data, layout, { renderer: 'webgl' });
+            Plotly.newPlot('plot', plot_data, layout);
             download_ready = true;
 
             console.log("making event")
@@ -499,6 +547,33 @@ docs:
 
 
         let counter = 1;
+        const getHwInfo = async () => {
+            let xhr = new XMLHttpRequest();
+            const baseUrl = window.location.protocol + "//" + window.location.host;
+            let thisurl = `${baseUrl}/api/recorded_device/`;
+            let title_bar = document.getElementById("instrument-label");
+            console.log(title_bar.innerText)
+            console.log(thisurl);
+            xhr.open('GET', thisurl, true);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    var response = JSON.parse(xhr.responseText);
+                    response.forEach(data => {
+                        if (data.id == device_id) {
+                            try {
+                                title_bar.innerHTML += data.name;
+                            } catch (error) {
+
+                            }
+                        }
+                    });
+                } else {
+                    console.warn("error to get data from API");
+                }
+            };
+            xhr.send();
+        }
         const getData = async () => {
             document.getElementById("loading-animation").style.visibility = 'visible';
             document.getElementById("btn-download").style.visibility = 'hidden';
@@ -514,21 +589,49 @@ docs:
             xhr.onreadystatechange = function () {
                 if (xhr.readyState === 4 && xhr.status === 200) {
                     var response = JSON.parse(xhr.responseText);
-                    let p_x = 0, py = 0;
-                    response.forEach(data => {
-                        log_data = JSON.parse(data.json);
-                        time_data = JSON.parse(data.time_data);
-                        acc_data.x.push(...log_data.x_values);
-                        acc_data.y.push(...log_data.y_values);
-                        acc_data.z.push(...log_data.z_values);
-                        time_data.forEach(element => {
-                            acc_data.n.push(counter);
-                            counter++;
-                            acc_data.time_data.push((parseInt(element) * 1000));
+                    if (JSON.parse(response[0].json).z_values != undefined) {
+                        console.log("ACC data");
+                        let p_x = 0, py = 0;
+                        response.forEach(data => {
+                            log_data = JSON.parse(data.json);
+                            time_data = JSON.parse(data.time_data);
+                            acc_data.x.push(...log_data.x_values);
+                            acc_data.y.push(...log_data.y_values);
+                            acc_data.z.push(...log_data.z_values);
+                            time_data.forEach(element => {
+                                acc_data.n.push(counter);
+                                counter++;
+                                acc_data.time_data.push((parseInt(element) * 1000));
+                            });
                         });
-                    });
-                    console.log("len of data", acc_data.x.length);
-                    draw_acc(acc_data);
+                        console.log("len of data", acc_data.x.length);
+                        document.getElementById('slider-position').max = acc_data.x.length;
+                        alloc_timm(acc_data);
+                        draw_acc(acc_data, 0, 8192);
+                        mqtt.connect(options);
+                    } else if (JSON.parse(response[0].json).raw != undefined) {
+                        console.log("Single data");
+                        let cnt = 0;
+                        response.forEach(data => {
+                            log_data = JSON.parse(data.json);
+                            time_data = JSON.parse(data.time_data);
+                            single_data.raw.push(...log_data.raw);
+                            single_data.filtered.push(...log_data.filtered);
+                            for (let i = 0; i < log_data.raw.length; i++) {
+                                let times = (parseInt(time_data) * 1000) + (cnt * 1000);
+                                single_data.time_data.push(new Date(times));
+                                cnt++;
+                            }
+                        });
+                        console.log(single_data.time_data.length)
+
+                        // draw_single_data(single_data);
+                        draw_single_data(single_data, 1024, 5000);
+                        console.log(single_data.filtered.length);
+                        document.getElementById('slider-position').max = single_data.filtered.length;
+                    } else {
+                        console.log("no data");
+                    }
                 } else {
                     console.warn("error to get data from API");
                 }
@@ -537,6 +640,7 @@ docs:
         };
 
         const download = async () => {
+            document.getElementById("btn-download").className = 'btn btn-disable';
             var csvContent = "id,x,y,z,date_time(local time)\n";
             for (var i = 0; i < acc_data.x.length; i++) {
                 csvContent += `${i + 1},${acc_data.x[i]},${acc_data.y[i]},${acc_data.z[i]},${timm[i]}\n`;
@@ -550,6 +654,7 @@ docs:
             a.click();
             document.body.removeChild(a);
             download_ready = true;
+            document.getElementById("btn-download").className = 'btn btn-success';
         };
 
         setInterval(() => {
@@ -566,16 +671,58 @@ docs:
             }
         }, 500);
 
-        window.onload = getData;
+        acc_to_send.cid = clientId;
+        acc_to_send.fs = 200;
+        acc_to_send.peaks_req = 6;
+
+        window.onload = async () => {
+            await getHwInfo();
+            await getData();
+        };
+
+
+        // Get the slider element
+        var slider = document.getElementById("slider-position");
+        // Update the displayed value when the slider value changes
+        slider.addEventListener("input", function () {
+            if (acc_data.x.length > 0) {
+                let start_pos = parseInt(slider.value);
+                let stop_pos = start_pos + (8192);
+                console.log(start_pos, stop_pos);
+                draw_acc(acc_data, start_pos, stop_pos);
+            } else {
+                let start_pos = parseInt(slider.value);
+                let stop_pos = start_pos + 1024;
+                console.log(start_pos, stop_pos);
+                draw_single_data(single_data, start_pos, stop_pos);
+            }
+        });
+
+        // document.getElementById('slider-position').onchange = async () => {
+        //     if (acc_data.x.length > 0) {
+        //         let start_pos = parseInt(document.getElementById('slider-position').value);
+        //         let stop_pos = start_pos + (8192);
+        //         console.log(start_pos, stop_pos);
+        //         draw_acc(acc_data, start_pos, stop_pos);
+        //     } else {
+        //         let start_pos = parseInt(document.getElementById('slider-position').value);
+        //         let stop_pos = start_pos + 1024;
+        //         console.log(start_pos, stop_pos);
+        //         draw_single_data(single_data, start_pos, stop_pos);
+        //     }
+        // }
+
+        document.getElementById("btn-autoscale").onclick = () => {
+            Plotly.relayout('plot', {
+                'yaxis.autorange': true
+            });
+        }
 
         document.getElementById('btn-download').onclick = () => {
             download_ready = false;
             download();
         };
 
-        acc_to_send.cid = clientId;
-        acc_to_send.fs = 50;
-        acc_to_send.peaks_req = 6;
         document.getElementById("btn-calculate").onclick = () => {
             if (mqtt.isConnected()) {
                 // Create a new MQTT message

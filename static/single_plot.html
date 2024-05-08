@@ -1,45 +1,57 @@
 <html>
-    <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <link rel="icon" href="/images/favicon.png">
-        <!-- Load Bootstrap 3 CSS -->
-        <link rel="stylesheet" href="/css/bootstrap3.min.css">
-        <!-- Load Plotly.js into the DOM -->
-        <script src='/js/plotly.min.js'></script>
-        <script src="/js/socket-io.min.js"></script>
-        <style>
-            .row.display-flex {
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="/images/favicon.png">
+    <!-- Load Bootstrap 3 CSS -->
+    <link rel="stylesheet" href="/css/bootstrap3.min.css">
+    <!-- Load Plotly.js into the DOM -->
+    <script src='/js/plotly.min.js'></script>
+    <script src="/js/socket-io.min.js"></script>
+    <style>
+        .row.display-flex {
             display: flex;
             flex-wrap: wrap;
-            }
-            .row.display-flex > [class*='col-'] {
+        }
+
+        .row.display-flex>[class*='col-'] {
             display: flex;
             flex-direction: column;
-            }
-        </style>
-        <script src="/js/jquery.min.js"></script>
-        <script src="/js/bootstrap3.min.js"></script>
-    </head>
-    <body>
-        <div class="container">
-            <div class="row">
-                <div class="col-md-12">
-                    <div class="jumbotron">
-                        <h1>
-                            INI HALAMAN SINGLE DATA
-                        </h1>
-                    </div>
+        }
+    </style>
+    <script src="/js/jquery.min.js"></script>
+    <script src="/js/bootstrap3.min.js"></script>
+</head>
+
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="jumbotron">
+                    <h1>
+                        INI HALAMAN SINGLE DATA
+                    </h1>
                 </div>
             </div>
-
-            <div class="row">
-                <div class="col-md-12">
-                    <div id='history_graph' style="border-radius: 5%;"></div>
-                </div>
-            </div>
-
         </div>
-    
-        <script src="/js/single_data_ws_com.js"></script>
-    </body>
+
+        <div class="row">
+            <div class="col-md-12">
+                <div id='history_graph' style="border-radius: 5%;"></div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-12">
+                <div id='kf_history_graph' style="border-radius: 5%;"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="/js/single_data_ws_com.js"></script>
+    <script>
+
+    </script>
+</body>
+
 </html>
