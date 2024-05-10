@@ -5,6 +5,7 @@ const mqtt = require('mqtt')
 var acc_data = {}
 var log_info = {}
 var single_data = {}
+var single_data_cf = {}
 var nodes_log_raw = {};
 var device_properties = {}
 
@@ -19,7 +20,13 @@ class Mqtt_handler {
         //ws functions
         this.io.on('connection', (socket) => {
             console.log('got connection');
+            socket.on('callibration_factor', (message) => {
+                console.log('Message received from HTML:', message);
+                let payload = JSON.parse(message);
+                single_data_cf[payload.topic] = parseFloat(payload.cf_value);
+            });
         })
+
 
         this.host = this.broker;
         this.port = '1883';
@@ -80,44 +87,93 @@ class Mqtt_handler {
                         let time_to_push = time_data_in - ((data_len - i) * 0.005); //for 5ms sampling delay (200Hz)
                         obj.time_data.push(time_to_push);
                     }
-		    new Promise(()=>{
-			this.update_acc_data(unparsed_topic, payload, obj.time_data, obj)
-		    });
+                    new Promise(() => {
+                        this.update_acc_data(unparsed_topic, payload, obj.time_data, obj)
+                    });
                     //this.update_acc_data(unparsed_topic, payload, obj.time_data, obj)
                 }
 
                 if (payload['sensor_type'] == 'single_data') {
-                    let sensor_data = payload.values;
-                    let kf_sensor_data = payload.kf_values;
-                    let timestamp = (new Date().getTime() / 1000);
-                    let data = {
-                        values: {
-                            raw: sensor_data,
-                            filtered: kf_sensor_data
-                        },
-                        timestamp: timestamp,
-                        label: payload.label + '@' + topic,
-                        topic: unparsed_topic
-                    }
-                    this.update_single_data(unparsed_topic, data, timestamp)
-                    let device_to_log = {}
-                    let data_to_log = {}
-                    device_properties.forEach(device => {
-                        if (device.topic == unparsed_topic) {
-                            device_to_log = device;
+                    console.log(unparsed_topic, single_data_cf[unparsed_topic] == undefined)
+                    console.log(single_data_cf);
+                    console.log(single_data_cf[unparsed_topic])
+                    if (single_data_cf[unparsed_topic] == undefined) {
+                        let sensor_data = payload.values;
+                        let kf_sensor_data = payload.kf_values;
+                        let timestamp = (new Date().getTime() / 1000);
+                        let data = {
+                            values: {
+                                raw: sensor_data,
+                                filtered: kf_sensor_data
+                            },
+                            timestamp: timestamp,
+                            label: payload.label,
+                            topic: unparsed_topic
                         }
-                    })
-
-                    if (device_to_log.log_raw == 1) {
-                        data_to_log['node'] = device_to_log.id
-                        data_to_log['meassurement_data'] = data;
-                        this.db.device_model.device_has_table(device_to_log.id).then((clbk) => {
-                            if (clbk == 1) {
-                                this.db.logger_model.log_single_data(device_to_log.id, data_to_log);
-                            } else {
-                                this.db.device_model.create_device_table(device_to_log.id);
+                        this.update_single_data(unparsed_topic, data, timestamp)
+                        let device_to_log = {}
+                        let data_to_log = {}
+                        device_properties.forEach(device => {
+                            if (device.topic == unparsed_topic) {
+                                device_to_log = device;
                             }
                         })
+
+                        if (device_to_log.log_raw == 1) {
+                            data_to_log['node'] = device_to_log.id
+                            data_to_log['meassurement_data'] = data;
+                            this.db.device_model.device_has_table(device_to_log.id).then((clbk) => {
+                                if (clbk == 1) {
+                                    this.db.logger_model.log_single_data(device_to_log.id, data_to_log);
+                                } else {
+                                    this.db.device_model.create_device_table(device_to_log.id);
+                                }
+                            })
+                        }
+                    } else {
+                        console.log('ada cf')
+                        let raw_buffer = [];
+                        let filtered_buffer = [];
+                        let sensor_data = payload.values;
+                        let kf_sensor_data = payload.kf_values;
+                        let timestamp = (new Date().getTime() / 1000);
+
+                        sensor_data.forEach(raw => {
+                            raw_buffer.push(parseFloat(raw) - parseFloat(single_data_cf[unparsed_topic]));
+                        });
+                        kf_sensor_data.forEach(filtered => {
+                            filtered_buffer.push(parseFloat(filtered) - parseFloat(single_data_cf[unparsed_topic]));
+                        });
+
+                        let data = {
+                            values: {
+                                raw: raw_buffer,
+                                filtered: filtered_buffer
+                            },
+                            timestamp: timestamp,
+                            label: payload.label,
+                            topic: unparsed_topic
+                        }
+                        this.update_single_data(unparsed_topic, data, timestamp)
+                        let device_to_log = {}
+                        let data_to_log = {}
+                        device_properties.forEach(device => {
+                            if (device.topic == unparsed_topic) {
+                                device_to_log = device;
+                            }
+                        })
+
+                        if (device_to_log.log_raw == 1) {
+                            data_to_log['node'] = device_to_log.id
+                            data_to_log['meassurement_data'] = data;
+                            this.db.device_model.device_has_table(device_to_log.id).then((clbk) => {
+                                if (clbk == 1) {
+                                    this.db.logger_model.log_single_data(device_to_log.id, data_to_log);
+                                } else {
+                                    this.db.device_model.create_device_table(device_to_log.id);
+                                }
+                            })
+                        }
                     }
 
                 }
@@ -251,7 +307,6 @@ class Mqtt_handler {
         this.io.local.emit(topic, single_data[topic]);
     }
 }
-
 
 
 

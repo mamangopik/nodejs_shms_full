@@ -245,13 +245,14 @@ const draw_fft = async (div, layout, data, peaks) => {
             bordercolor: '#c7c7c7',
             borderwidth: 2,
             borderpad: 4,
-            bgcolor: data.line.color,
+            bgcolor: 'rgb(71, 67, 58)',
             opacity: 0.7
         };
         layout.annotations.push(annotation);
         i++;
     });
-    Plotly.newPlot(div, [data], layout, hide_toolbar, {
+
+    Plotly.newPlot(div, data, layout, hide_toolbar, {
         staticPlot: true
     });
     layout.annotations = [];
@@ -507,7 +508,7 @@ function connect() {
             type: 'scatter',
             name: 'x',
             line: {
-                color: 'rgb(0, 0, 255)',
+                color: 'rgb(3, 107, 252)',
                 width: 2
             }
         };
@@ -518,7 +519,7 @@ function connect() {
             type: 'scatter',
             name: 'y',
             line: {
-                color: 'rgb(0, 255, 0)',
+                color: 'rgb(237, 162, 21)',
                 width: 2
             }
         };
@@ -529,7 +530,7 @@ function connect() {
             type: 'scatter',
             name: 'z',
             line: {
-                color: 'rgb(255, 0, 0)',
+                color: 'rgb(242, 53, 53)',
                 width: 2
             }
         };
@@ -541,7 +542,7 @@ function connect() {
             type: 'scatter',
             name: 'x_kf',
             line: {
-                color: 'rgb(0, 0, 255)',
+                color: 'black',
                 width: 2
             }
         };
@@ -552,7 +553,7 @@ function connect() {
             type: 'scatter',
             name: 'y_kf',
             line: {
-                color: 'rgb(0, 255, 0)',
+                color: 'black',
                 width: 2
             }
         };
@@ -563,7 +564,7 @@ function connect() {
             type: 'scatter',
             name: 'z_kf',
             line: {
-                color: 'rgb(255, 0, 0)',
+                color: 'black',
                 width: 2
             }
         };
@@ -571,8 +572,9 @@ function connect() {
         if (btn_axis.toggle_x == 1) {
             document.getElementById('fft_graph_x').style.display = 'block';
             document.getElementById('fft_graph_x_kf').style.display = 'block';
-            await draw_fft('fft_graph_x', layout_fft.x, fft_x, data.peaks.x);
-            await draw_fft('fft_graph_x_kf', layout_fft.x, fft_x_kf, data.peaks_kf.x);
+            // Plotly.newPlot(fft_graph_x, [fft_x, fft_x_kf], layout_fft.x, hide_toolbar);
+            await draw_fft('fft_graph_x', layout_fft.x, [fft_x, fft_x_kf], data.peaks.x);
+            // await draw_fft('fft_graph_x_kf', layout_fft.x, fft_x_kf, data.peaks_kf.x);
             new Promise(() => {
                 peaks_table.x[0].innerHTML = `${parseFloat(data.peaks.x[0][0]).toFixed(4)}Hz, ${parseFloat(data.peaks.x[0][1]).toFixed(4)}mG`;
                 peaks_table.x[1].innerHTML = `${parseFloat(data.peaks.x[1][0]).toFixed(4)}Hz, ${parseFloat(data.peaks.x[1][1]).toFixed(4)}mG`;
@@ -588,8 +590,8 @@ function connect() {
             document.getElementById('fft_graph_y').style.display = 'block';
             document.getElementById('fft_graph_y_kf').style.display = 'block';
             if (render_fft_graph == 1) {
-                await draw_fft('fft_graph_y', layout_fft.y, fft_y, data.peaks.y);
-                await draw_fft('fft_graph_y_kf', layout_fft.y, fft_y_kf, data.peaks_kf.y);
+                await draw_fft('fft_graph_y', layout_fft.y, [fft_y, fft_y_kf], data.peaks.y);
+                // await draw_fft('fft_graph_y_kf', layout_fft.y, fft_y_kf, data.peaks_kf.y);
                 new Promise(() => {
                     peaks_table.y[0].innerHTML = `${parseFloat(data.peaks.y[0][0]).toFixed(4)}Hz, ${parseFloat(data.peaks.y[0][1]).toFixed(4)}mG`;
                     peaks_table.y[1].innerHTML = `${parseFloat(data.peaks.y[1][0]).toFixed(4)}Hz, ${parseFloat(data.peaks.y[1][1]).toFixed(4)}mG`;
@@ -604,8 +606,8 @@ function connect() {
             document.getElementById('fft_graph_z').style.display = 'block';
             document.getElementById('fft_graph_z_kf').style.display = 'block';
             if (render_fft_graph == 1) {
-                await draw_fft('fft_graph_z', layout_fft.z, fft_z, data.peaks.z);
-                await draw_fft('fft_graph_z_kf', layout_fft.z, fft_z_kf, data.peaks_kf.z);
+                await draw_fft('fft_graph_z', layout_fft.z, [fft_z, fft_z_kf], data.peaks.z);
+                // await draw_fft('fft_graph_z_kf', layout_fft.z, fft_z_kf, data.peaks_kf.z);
                 new Promise(() => {
                     peaks_table.z[0].innerHTML = `${parseFloat(data.peaks.z[0][0]).toFixed(4)}Hz, ${parseFloat(data.peaks.z[0][1]).toFixed(4)}mG`;
                     peaks_table.z[1].innerHTML = `${parseFloat(data.peaks.z[1][0]).toFixed(4)}Hz, ${parseFloat(data.peaks.z[1][1]).toFixed(4)}mG`;

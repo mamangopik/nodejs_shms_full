@@ -1,5 +1,8 @@
 const tokenGenerator = require('uuid-token-generator');
 const { user_model } = require('../model/database');
+// const compressor = require('../assets/js/huffman')
+const LZUTF8 = require('lzutf8');
+
 
 class API_handler {
     constructor(app, db, mqtt) {
@@ -76,7 +79,10 @@ class API_handler {
             let id = req.body.id;
             db.logger_model.get_node_datalog(id)
                 .then((payload) => {
-                    res.json(payload);
+                    let originalString = JSON.stringify(payload);
+                    let compressed1 = String(LZUTF8.compress(originalString, { outputEncoding: 'Base64' }));
+                    let json = { "payload": compressed1 }
+                    res.json(json);
                 })
         })
 

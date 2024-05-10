@@ -25,26 +25,38 @@
 
 <body>
     <div class="container-fluid">
-        <div class="row">
-            <div class="col-md-12">
-                <div class="jumbotron">
-                    <h1>
-                        INI HALAMAN SINGLE DATA
-                    </h1>
-                </div>
+        <h1 id="title-bar" style="text-align: center;">
+            Data of
+        </h1>
+    </div>
+    <div class="row">
+        <div class="col-md-4">
+            <div class="jumbotron" style="margin-left: 10%;padding-left: 5%;">
+                <h2>MIN:0.5</h2>
+                <h2>MAX:70</h2>
+                <h2>AVG:70</h2>
             </div>
         </div>
-
-        <div class="row">
-            <div class="col-md-12">
-                <div id='history_graph' style="border-radius: 5%;"></div>
+        <div class="col-md-4">
+            <div class="form-group">
+                <label for="cf-input">Tare Value</label>
+                <input type="number" step="0.01" class="form-control" id="cf-input" placeholder="Tare Value">
             </div>
+            <button type="submit" class="btn btn-primary col-md-12" id="btn-set-cf">Tare</button>
         </div>
-        <div class="row">
-            <div class="col-md-12">
-                <div id='kf_history_graph' style="border-radius: 5%;"></div>
-            </div>
+        <div class=" col-md-4">
         </div>
+    </div>
+    <div class="row">
+        <div class="col-md-12">
+            <div id='data_graph' style="border-radius: 5%;"></div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-12">
+            <div id='history_graph' style="border-radius: 5%;"></div>
+        </div>
+    </div>
 
     </div>
 

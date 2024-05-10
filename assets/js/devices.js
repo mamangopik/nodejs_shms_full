@@ -176,7 +176,7 @@ const draw_node_list = () => {
                                 <a href="#update" data-toggle="modal" data-target="#exampleModal" id="edit_url_${element.id}">
                                     <img width="20" height="20" src="/images/edit.png" alt="edit">
                                 </a>
-                                <a href="${baseUrl}/realtime_graph/${element.type}?topic=${element.topic}" target="_blank">
+                                <a href="${baseUrl}/realtime_graph/${element.type}?topic=${element.topic}&id=${element.id}" target="_blank">
                                     <img width="20" height="20" src="/images/open.png" alt="open">
                                 </a>
 								<a href="${baseUrl}/logger_data/direct?id=${element.id}" target="_blank">

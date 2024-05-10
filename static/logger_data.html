@@ -156,7 +156,10 @@ docs:
         </div>
     </div>
 
+    <script src="/js/hauffman.js"></script>
+    <script src="/js/papaparse.js"></script>
     <script>
+        var instrument_name = "";
         var fft_plot_heigh = 300;
         var layout_fft = {
             'x': {
@@ -530,8 +533,6 @@ docs:
                     let xmax = date_to_unix(eventdata['xaxis.range[1]'])
                     var yInside = []
                     console.log(xmin, xmax)
-
-
                     for (var i = 0; i < len; i++) {
                         var x = date_to_unix(trace.x[i])
                         var y = trace.y[i]
@@ -563,6 +564,7 @@ docs:
                         if (data.id == device_id) {
                             try {
                                 title_bar.innerHTML += data.name;
+                                instrument_name = data.name;
                             } catch (error) {
 
                             }
@@ -575,6 +577,8 @@ docs:
             xhr.send();
         }
         const getData = async () => {
+            let startTime = parseInt(Date.now());
+            console.log("start", startTime)
             document.getElementById("loading-animation").style.visibility = 'visible';
             document.getElementById("btn-download").style.visibility = 'hidden';
             document.getElementById("content").style.visibility = 'hidden';
@@ -588,7 +592,10 @@ docs:
             xhr.setRequestHeader('Content-Type', 'application/json');
             xhr.onreadystatechange = function () {
                 if (xhr.readyState === 4 && xhr.status === 200) {
-                    var response = JSON.parse(xhr.responseText);
+                    let compressedString = JSON.parse(xhr.responseText).payload;
+                    let decompressedString1 = LZUTF8.decompress((compressedString), { inputEncoding: "Base64" });
+                    var response = JSON.parse(decompressedString1);
+
                     if (JSON.parse(response[0].json).z_values != undefined) {
                         console.log("ACC data");
                         let p_x = 0, py = 0;
@@ -610,6 +617,7 @@ docs:
                         draw_acc(acc_data, 0, 8192);
                         mqtt.connect(options);
                     } else if (JSON.parse(response[0].json).raw != undefined) {
+                        document.getElementById('btn-calculate').style.display = 'none';
                         console.log("Single data");
                         let cnt = 0;
                         response.forEach(data => {
@@ -623,8 +631,6 @@ docs:
                                 cnt++;
                             }
                         });
-                        console.log(single_data.time_data.length)
-
                         // draw_single_data(single_data);
                         draw_single_data(single_data, 1024, 5000);
                         console.log(single_data.filtered.length);
@@ -632,6 +638,9 @@ docs:
                     } else {
                         console.log("no data");
                     }
+                    finish = parseInt(Date.now()) - startTime;
+                    console.log(single_data.time_data.length)
+                    console.log("finish", finish)
                 } else {
                     console.warn("error to get data from API");
                 }
@@ -639,22 +648,118 @@ docs:
             xhr.send(data);
         };
 
+        // Function to split CSV into chunks
+        function splitCSVIntoChunks(csv, chunkSize) {
+            const chunks = [];
+            for (let i = 0; i < csv.length; i += chunkSize) {
+                chunks.push(csv.slice(i, i + chunkSize));
+            }
+            return chunks;
+        }
+
+        // Function to create and trigger download link for each chunk
+        function downloadCSVChunks(chunks) {
+            chunks.forEach((chunk, index) => {
+                const blob = new Blob([chunk.join('\n')], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement("a");
+                if (link.download !== undefined) {
+                    const url = URL.createObjectURL(blob);
+                    link.setAttribute("href", url);
+                    link.setAttribute("download", `${instrument_name}_${timm[acc_data.x.length - 1]}_acc_data_part${index + 1}.csv`);
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                } else {
+                    console.error("Download functionality is not supported on this browser.");
+                }
+            });
+        }
+
         const download = async () => {
             document.getElementById("btn-download").className = 'btn btn-disable';
-            var csvContent = "id,x,y,z,date_time(local time)\n";
-            for (var i = 0; i < acc_data.x.length; i++) {
-                csvContent += `${i + 1},${acc_data.x[i]},${acc_data.y[i]},${acc_data.z[i]},${timm[i]}\n`;
-            }
-            var blob = new Blob([csvContent], { type: 'text/csv' });
-            var a = document.createElement('a');
-            a.href = window.URL.createObjectURL(blob);
-            a.download = `${timm[acc_data.x.length - 1]}_acc_data.csv`;
-            a.style.display = 'none';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            download_ready = true;
-            document.getElementById("btn-download").className = 'btn btn-success';
+            setTimeout(() => {
+
+                if (acc_data.x.length > 0) {
+                    // Example array
+                    const data = [
+                        ["id", 'x', 'y', 'z', 'date_time(local time)'],
+                    ];
+                    for (let i = 0; i < acc_data.x.length; i++) {
+                        buffer = [i, acc_data.x[i], acc_data.y[i], acc_data.z[i], timm[i]]
+                        data.push(buffer)
+                    }
+
+                    const csv = Papa.unparse(data);
+
+                    // Split CSV into chunks (assuming each chunk contains 1000 rows)
+                    const chunkSize = 500000;
+                    const csvChunks = splitCSVIntoChunks(csv.split('\n'), chunkSize);
+
+                    downloadCSVChunks(csvChunks);
+                    //=================================================================================================
+                    // // Example array
+                    // const data = [
+                    //     ["id", 'x', 'y', 'z', 'date_time(local time)'],
+                    // ];
+                    // for (let i = 0; i < acc_data.x.length; i++) {
+                    //     // buffer = `${i + 1},${acc_data.x[i]},${acc_data.y[i]},${acc_data.z[i]},${timm[i]}\n`;
+                    //     buffer = [i, acc_data.x[i], acc_data.y[i], acc_data.z[i], timm[i]]
+                    //     data.push(buffer)
+                    // }
+
+                    // // Convert array to CSV
+                    // const csv = Papa.unparse(data);
+
+                    // // Create Blob
+                    // const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+
+                    // // Create download link
+                    // const link = document.createElement("a");
+                    // if (link.download !== undefined) {
+                    //     const url = URL.createObjectURL(blob);
+                    //     link.setAttribute("href", url);
+                    //     link.setAttribute("download", `${instrument_name}_${timm[acc_data.x.length - 1]}_acc_data.csv`);
+                    //     document.body.appendChild(link);
+                    //     link.click();
+                    //     document.body.removeChild(link);
+                    // } else {
+                    //     console.error("Download functionality is not supported on this browser.");
+                    // }
+                    //=========================================================================================================
+
+                    // let csvContent = "id,x,y,z,date_time(local time)\n";
+                    // for (let i = 0; i < acc_data.x.length; i++) {
+                    //     csvContent += `${i + 1},${acc_data.x[i]},${acc_data.y[i]},${acc_data.z[i]},${timm[i]}\n`;
+                    // }
+                    // let blob = new Blob([csvContent], { type: 'text/csv' });
+                    // let a = document.createElement('a');
+                    // a.href = window.URL.createObjectURL(blob);
+                    // a.download = `${instrument_name}_${timm[acc_data.x.length - 1]}_acc_data.csv`;
+                    // a.style.display = 'none';
+                    // document.body.appendChild(a);
+                    // a.click();
+                    // document.body.removeChild(a);
+                }
+                else if (single_data.raw.length > 0) {
+                    let csvContent = "id,raw,filtered,date_time(local time)\n";
+                    for (let i = 0; i < single_data.raw.length; i++) {
+                        csvContent += `${i + 1},${single_data.raw[i]},${single_data.filtered[i]},${single_data.time_data[i]}\n`;
+                    }
+                    let blob = new Blob([csvContent], { type: 'text/csv' });
+                    let a = document.createElement('a');
+                    a.href = window.URL.createObjectURL(blob);
+                    a.download = `${instrument_name}_${single_data.time_data[single_data.raw.length - 1]}_sensor_data.csv`;
+                    a.style.display = 'none';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                }
+                else {
+                    alert('no data')
+                }
+                download_ready = true;
+                document.getElementById("btn-download").className = 'btn btn-success';
+            }, 3000);
         };
 
         setInterval(() => {
@@ -673,7 +778,7 @@ docs:
 
         acc_to_send.cid = clientId;
         acc_to_send.fs = 200;
-        acc_to_send.peaks_req = 6;
+        acc_to_send.peaks_req = 1;
 
         window.onload = async () => {
             await getHwInfo();
@@ -687,7 +792,7 @@ docs:
         slider.addEventListener("input", function () {
             if (acc_data.x.length > 0) {
                 let start_pos = parseInt(slider.value);
-                let stop_pos = start_pos + (8192);
+                let stop_pos = (start_pos - 2000) + (8192 + 2000);
                 console.log(start_pos, stop_pos);
                 draw_acc(acc_data, start_pos, stop_pos);
             } else {
