@@ -2,6 +2,7 @@ const tokenGenerator = require('uuid-token-generator');
 const { user_model } = require('../model/database');
 // const compressor = require('../assets/js/huffman')
 const LZUTF8 = require('lzutf8');
+const { response } = require('express');
 
 
 class API_handler {
@@ -61,28 +62,60 @@ class API_handler {
             }
         });
 
-        app.get('/api/recorded_nodes', (req, res) => {
+        app.get('/api/recorded_nodes', async (req, res) => {
             db.logger_model.get_nodes()
                 .then((payload) => {
                     res.json(payload);
                 })
         })
 
-        app.get('/api/recorded_device', (req, res) => {
+        app.get('/api/recorded_device', async (req, res) => {
             db.device_model.get_device_list()
                 .then((payload) => {
                     res.json(payload);
                 })
         })
 
-        app.post('/api/get_node_data', (req, res) => {
+        app.post('/api/get_node_data', async (req, res) => {
+            let compressed = false;
             let id = req.body.id;
+            let startTime = parseInt(Date.now());
+            console.log({ id: id, "start": startTime })
             db.logger_model.get_node_datalog(id)
-                .then((payload) => {
-                    let originalString = JSON.stringify(payload);
-                    let compressed1 = String(LZUTF8.compress(originalString, { outputEncoding: 'Base64' }));
-                    let json = { "payload": compressed1 }
-                    res.json(json);
+                .then((payloads) => {
+                    try {
+                        //ensure data is compatible with old version of logged data
+                        let response = []
+                        payloads.forEach(payload => {
+                            if (payload.json[0] != '{') {
+                                let processed_data = LZUTF8.decompress(payload.json, { inputEncoding: 'Base64' });
+                                payload.json = processed_data;
+                            }
+
+                            if (payload.time_data.length > 16) {
+                                if (payload.time_data[0] != '[') {
+                                    let processed_time_data = LZUTF8.decompress(payload.time_data, { inputEncoding: 'Base64' });
+                                    payload.time_data = processed_time_data;
+                                }
+                            }
+                            response.push(payload);
+                        });
+
+
+                        if (compressed == true) {
+                            let compressed_payload = LZUTF8.compress(JSON.stringify(response), { outputEncoding: 'Base64' });
+                            res.json({ "data": compressed_payload, "compressed": true });
+                            let finish = parseInt(Date.now()) - startTime;
+                            console.log("finish", finish)
+                        } else {
+                            res.json({ "data": response, "compressed": false });
+                            let finish = parseInt(Date.now()) - startTime;
+                            console.log("finish", finish)
+                        }
+
+                    } catch (error) {
+                        console.log(error)
+                    }
                 })
         })
 
@@ -93,7 +126,7 @@ class API_handler {
             });
         });
 
-        app.post('/api/devices/add', (req, res) => {
+        app.post('/api/devices/add', async (req, res) => {
             let data = req.body;
             data['id'] = 'inst' + parseInt(new Date().getTime());
             db.device_model.add_device(data).then((result, error) => {
@@ -107,7 +140,7 @@ class API_handler {
             });
         });
 
-        app.post('/api/devices/update', (req, res) => {
+        app.post('/api/devices/update', async (req, res) => {
             let data = req.body;
             console.log(data);
             db.device_model.get_topic_by_id(data.id).then((topic_old) => {

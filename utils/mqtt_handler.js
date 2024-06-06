@@ -1,5 +1,6 @@
 const socket = require('socket.io');
 const mqtt = require('mqtt')
+const LZUTF8 = require('lzutf8');
 
 //global variable for acc_data
 var acc_data = {}
@@ -84,7 +85,7 @@ class Mqtt_handler {
 
                     obj['time_data'] = [];
                     for (let i = 0; i < data_len; i++) {
-                        let time_to_push = time_data_in - ((data_len - i) * 0.005); //for 5ms sampling delay (200Hz)
+                        let time_to_push = time_data_in - ((data_len - i) * (1 / payload.sampling_frequency)); //for 5ms sampling delay (200Hz)
                         obj.time_data.push(time_to_push);
                     }
                     new Promise(() => {
@@ -108,7 +109,9 @@ class Mqtt_handler {
                             },
                             timestamp: timestamp,
                             label: payload.label,
-                            topic: unparsed_topic
+                            topic: unparsed_topic,
+                            v_vbatt: payload['battery_voltage'],
+                            RSSI: payload['signal_strength']
                         }
                         this.update_single_data(unparsed_topic, data, timestamp)
                         let device_to_log = {}
@@ -152,7 +155,9 @@ class Mqtt_handler {
                             },
                             timestamp: timestamp,
                             label: payload.label,
-                            topic: unparsed_topic
+                            topic: unparsed_topic,
+                            v_vbatt: payload['battery_voltage'],
+                            RSSI: payload['signal_strength']
                         }
                         this.update_single_data(unparsed_topic, data, timestamp)
                         let device_to_log = {}
@@ -179,7 +184,7 @@ class Mqtt_handler {
                 }
 
             } catch (error) {
-                // console.log(error);
+                console.log(error);
             }
         })
     }

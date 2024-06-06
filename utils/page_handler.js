@@ -25,8 +25,15 @@ class Page_handler {
         });
 
         app.get('/', async (req, res) => {
-            const static_view = view_path + 'login.html';
-            res.sendFile(static_view);
+            const userData = req.cookies.login_info;
+            console.log("belom login");
+            if (userData) {
+                const static_view = view_path + 'devices.html';
+                res.sendFile(static_view);
+            } else {
+                const static_view = view_path + 'login.html';
+                res.sendFile(static_view);
+            }
         });
 
         app.get('/register', async (req, res) => {

@@ -154,13 +154,20 @@ docs:
                 <div id="fft_graph_z"></div>
             </div>
         </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <div id="proc_plot"></div>
+            </div>
+        </div>
     </div>
 
-    <script src="/js/hauffman.js"></script>
+    <script src="/js/LZUTF8.js"></script>
     <script src="/js/papaparse.js"></script>
     <script>
+        var sampling_multiplier = 0.1024;
         var instrument_name = "";
-        var fft_plot_heigh = 300;
+        var fft_plot_heigh = 600;
         var layout_fft = {
             'x': {
                 height: fft_plot_heigh,
@@ -510,9 +517,42 @@ docs:
                 }
             };
 
+            // let reps = parseInt(8192 / Math.ceil(trace1.y.length))
+            // acc_to_send[trace1.name] = [];
+            // acc_to_send[trace2.name] = [];
+            // acc_to_send[trace3.name] = [];
+            // console.log("reps", reps);
+            // for (let i = 0; i < reps; i++) {
+            //     acc_to_send[trace1.name].push(trace1.y);
+            //     acc_to_send[trace2.name].push(trace2.y);
+            //     acc_to_send[trace3.name].push(trace3.y);
+            // }
+
+            // let reps = parseInt((2048 * sampling_multiplier) / Math.ceil(trace1.y.length)) + 1;
+            // reps = 1;
+            // let buf1 = [], buf2 = [], buf3 = [];
+            // for (let i = 0; i < reps; i++) {
+            //     buf1.push(trace1.y);
+            //     buf2.push(trace2.y);
+            //     buf3.push(trace3.y);
+            // }
+
+            // acc_to_send[trace1.name] = buf1;
+            // acc_to_send[trace2.name] = buf2;
+            // acc_to_send[trace3.name] = buf3;
+
+
+
+
+
+            // acc_to_send[trace1.name] = trace1.y.concat(trace1.y, trace1.y, trace1.y, trace1.y);
+            // acc_to_send[trace2.name] = trace2.y.concat(trace2.y, trace2.y, trace2.y, trace2.y);
+            // acc_to_send[trace3.name] = trace3.y.concat(trace3.y, trace3.y, trace3.y, trace3.y);
+
             acc_to_send[trace1.name] = trace1.y;
             acc_to_send[trace2.name] = trace2.y;
             acc_to_send[trace3.name] = trace3.y;
+
 
             const plot_data = [trace1, trace2, trace3];
             Plotly.newPlot('plot', plot_data, layout);
@@ -532,7 +572,8 @@ docs:
                     let xmin = date_to_unix(eventdata['xaxis.range[0]'])
                     let xmax = date_to_unix(eventdata['xaxis.range[1]'])
                     var yInside = []
-                    console.log(xmin, xmax)
+                    console.log(xmin, xmax);
+                    console.log(typeof xmin, typeof xmax);
                     for (var i = 0; i < len; i++) {
                         var x = date_to_unix(trace.x[i])
                         var y = trace.y[i]
@@ -540,9 +581,43 @@ docs:
                             yInside.push(y)
                         }
                     }
+
                     acc_to_send[trace['name']] = yInside;
+                    // let reps_evt = parseInt((2048 * sampling_multiplier) / Math.ceil(yInside.length)) + 1;
+                    // reps_evt = 1;
+                    // let concatenatedArray = [];
+                    // for (let i = 0; i < reps_evt; i++) {
+                    //     concatenatedArray = concatenatedArray.concat(yInside);
+                    // }
+                    // acc_to_send[trace['name']] = concatenatedArray;
+                    // console.log("dicopy sebanyak", reps_evt);
+                    // acc_to_send[trace['name']] = yInside.concat(yInside, yInside, yInside, yInside);
                 });
                 // console.log(acc_to_send)
+            })
+            graphDiv.on('plotly_click', async (eventdata) => {
+                console.log("aa");
+                var gd = document.getElementById('plot');
+                var xRange = gd.layout.xaxis.range;
+                var yRange = gd.layout.yaxis.range;
+                var x_max = date_to_unix(xRange[1]);
+                var x_min = date_to_unix(xRange[0]);
+                gd.data.forEach((graph) => {
+                    var data_time_plot = graph.x;
+                    var data_val_plot = graph.y;
+                    console.log(graph);
+                    console.log(xRange);
+                    console.log(x_max, x_min);
+                    var yInside = [];
+                    for (var i = 0; i < graph.x.length; i++) {
+                        var x = date_to_unix(graph.x[i])
+                        var y = graph.y[i]
+                        if (x > x_min && x < x_max) {
+                            yInside.push(y)
+                        }
+                    }
+                    acc_to_send[graph['name']] = yInside;
+                })
             })
         };
 
@@ -582,20 +657,47 @@ docs:
             document.getElementById("loading-animation").style.visibility = 'visible';
             document.getElementById("btn-download").style.visibility = 'hidden';
             document.getElementById("content").style.visibility = 'hidden';
-            var xhr = new XMLHttpRequest();
-            const baseUrl = window.location.protocol + "//" + window.location.host;
-            var url = `${baseUrl}/api/get_node_data`;
-            var data = JSON.stringify({ "id": device_id });
-            console.log(data);
-            console.log(url);
-            xhr.open('POST', url, true);
-            xhr.setRequestHeader('Content-Type', 'application/json');
-            xhr.onreadystatechange = function () {
-                if (xhr.readyState === 4 && xhr.status === 200) {
-                    let compressedString = JSON.parse(xhr.responseText).payload;
-                    let decompressedString1 = LZUTF8.decompress((compressedString), { inputEncoding: "Base64" });
-                    var response = JSON.parse(decompressedString1);
 
+            let base = window.location.protocol + "//" + window.location.host;
+            let uri = `${base}/api/get_node_data`;
+            fetch(uri, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ id: device_id })
+            })
+                .then(response => {
+                    // Check if the response is gzip compressed
+                    if (response.headers.get('Content-Encoding') === 'gzip') {
+                        // Decode the gzip compressed data
+                        return response.blob().then(blob => {
+                            return new Promise((resolve, reject) => {
+                                const reader = new FileReader();
+                                reader.onload = () => {
+                                    resolve(JSON.parse(reader.result));
+                                };
+                                reader.onerror = reject;
+                                reader.readAsText(blob);
+                            });
+                        });
+                    } else {
+                        // If response is not gzip compressed, directly parse JSON
+                        return response.json();
+                    }
+                })
+                .then(data => {
+                    // Handle your decoded JSON data here
+                    let response;
+                    // console.log(data)
+                    finish = parseInt(Date.now()) - startTime;
+                    console.log("finish", finish)
+                    if (data.compressed == true) {
+                        let processed_data = LZUTF8.decompress(data.data, { inputEncoding: 'Base64' });
+                        response = JSON.parse(processed_data);
+                    } else {
+                        response = (data.data);
+                    }
                     if (JSON.parse(response[0].json).z_values != undefined) {
                         console.log("ACC data");
                         let p_x = 0, py = 0;
@@ -614,12 +716,13 @@ docs:
                         console.log("len of data", acc_data.x.length);
                         document.getElementById('slider-position').max = acc_data.x.length;
                         alloc_timm(acc_data);
-                        draw_acc(acc_data, 0, 8192);
+                        draw_acc(acc_data, 0, (0xffff / 2));
                         mqtt.connect(options);
                     } else if (JSON.parse(response[0].json).raw != undefined) {
                         document.getElementById('btn-calculate').style.display = 'none';
                         console.log("Single data");
                         let cnt = 0;
+                        // console.log(response)
                         response.forEach(data => {
                             log_data = JSON.parse(data.json);
                             time_data = JSON.parse(data.time_data);
@@ -638,14 +741,10 @@ docs:
                     } else {
                         console.log("no data");
                     }
-                    finish = parseInt(Date.now()) - startTime;
-                    console.log(single_data.time_data.length)
-                    console.log("finish", finish)
-                } else {
-                    console.warn("error to get data from API");
-                }
-            };
-            xhr.send(data);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
         };
 
         // Function to split CSV into chunks
@@ -678,7 +777,6 @@ docs:
         const download = async () => {
             document.getElementById("btn-download").className = 'btn btn-disable';
             setTimeout(() => {
-
                 if (acc_data.x.length > 0) {
                     // Example array
                     const data = [
@@ -696,49 +794,7 @@ docs:
                     const csvChunks = splitCSVIntoChunks(csv.split('\n'), chunkSize);
 
                     downloadCSVChunks(csvChunks);
-                    //=================================================================================================
-                    // // Example array
-                    // const data = [
-                    //     ["id", 'x', 'y', 'z', 'date_time(local time)'],
-                    // ];
-                    // for (let i = 0; i < acc_data.x.length; i++) {
-                    //     // buffer = `${i + 1},${acc_data.x[i]},${acc_data.y[i]},${acc_data.z[i]},${timm[i]}\n`;
-                    //     buffer = [i, acc_data.x[i], acc_data.y[i], acc_data.z[i], timm[i]]
-                    //     data.push(buffer)
-                    // }
 
-                    // // Convert array to CSV
-                    // const csv = Papa.unparse(data);
-
-                    // // Create Blob
-                    // const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-
-                    // // Create download link
-                    // const link = document.createElement("a");
-                    // if (link.download !== undefined) {
-                    //     const url = URL.createObjectURL(blob);
-                    //     link.setAttribute("href", url);
-                    //     link.setAttribute("download", `${instrument_name}_${timm[acc_data.x.length - 1]}_acc_data.csv`);
-                    //     document.body.appendChild(link);
-                    //     link.click();
-                    //     document.body.removeChild(link);
-                    // } else {
-                    //     console.error("Download functionality is not supported on this browser.");
-                    // }
-                    //=========================================================================================================
-
-                    // let csvContent = "id,x,y,z,date_time(local time)\n";
-                    // for (let i = 0; i < acc_data.x.length; i++) {
-                    //     csvContent += `${i + 1},${acc_data.x[i]},${acc_data.y[i]},${acc_data.z[i]},${timm[i]}\n`;
-                    // }
-                    // let blob = new Blob([csvContent], { type: 'text/csv' });
-                    // let a = document.createElement('a');
-                    // a.href = window.URL.createObjectURL(blob);
-                    // a.download = `${instrument_name}_${timm[acc_data.x.length - 1]}_acc_data.csv`;
-                    // a.style.display = 'none';
-                    // document.body.appendChild(a);
-                    // a.click();
-                    // document.body.removeChild(a);
                 }
                 else if (single_data.raw.length > 0) {
                     let csvContent = "id,raw,filtered,date_time(local time)\n";
@@ -778,7 +834,7 @@ docs:
 
         acc_to_send.cid = clientId;
         acc_to_send.fs = 200;
-        acc_to_send.peaks_req = 1;
+        acc_to_send.peaks_req = 13;
 
         window.onload = async () => {
             await getHwInfo();
@@ -792,7 +848,7 @@ docs:
         slider.addEventListener("input", function () {
             if (acc_data.x.length > 0) {
                 let start_pos = parseInt(slider.value);
-                let stop_pos = (start_pos - 2000) + (8192 + 2000);
+                let stop_pos = (start_pos - 2000) + ((0xffff / 2) + 2000);
                 console.log(start_pos, stop_pos);
                 draw_acc(acc_data, start_pos, stop_pos);
             } else {
@@ -802,20 +858,6 @@ docs:
                 draw_single_data(single_data, start_pos, stop_pos);
             }
         });
-
-        // document.getElementById('slider-position').onchange = async () => {
-        //     if (acc_data.x.length > 0) {
-        //         let start_pos = parseInt(document.getElementById('slider-position').value);
-        //         let stop_pos = start_pos + (8192);
-        //         console.log(start_pos, stop_pos);
-        //         draw_acc(acc_data, start_pos, stop_pos);
-        //     } else {
-        //         let start_pos = parseInt(document.getElementById('slider-position').value);
-        //         let stop_pos = start_pos + 1024;
-        //         console.log(start_pos, stop_pos);
-        //         draw_single_data(single_data, start_pos, stop_pos);
-        //     }
-        // }
 
         document.getElementById("btn-autoscale").onclick = () => {
             Plotly.relayout('plot', {
@@ -828,13 +870,46 @@ docs:
             download();
         };
 
+
+        const draw_proc = async () => {
+            const trace1 = {
+                y: acc_to_send.X,
+                type: 'scatter',
+                mode: 'scatter',
+                name: 'X'
+            };
+            const trace2 = {
+                y: acc_to_send.Y,
+                type: 'scatter',
+                mode: 'scatter',
+                name: 'Y'
+            };
+            const trace3 = {
+                y: acc_to_send.Z,
+                type: 'scatter',
+                mode: 'scatter',
+                name: 'Z'
+            };
+            const layout = {
+                title: 'Acceleration Data',
+                height: 600,
+                showlegend: true,
+                yaxis: {
+                    autorange: true
+                }
+            };
+            const plot_data = [trace1, trace2, trace3];
+            Plotly.newPlot('proc_plot', plot_data, layout);
+        }
         document.getElementById("btn-calculate").onclick = () => {
             if (mqtt.isConnected()) {
                 // Create a new MQTT message
+                console.log("data raw fft sebanyak", acc_to_send.X.length);
                 const mqttMessage = new Paho.MQTT.Message(JSON.stringify(acc_to_send));
                 mqttMessage.destinationName = "/shms/convert/acc";
                 // Send the MQTT message
                 mqtt.send(mqttMessage);
+                draw_proc();
             } else {
                 // Handle the case when the MQTT client is not connected
                 console.error("MQTT client is not connected");

@@ -15,6 +15,7 @@ const express = require('express');
 const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
 const { start } = require('repl');
+const compression = require('compression');
 
 const app = express();
 const path = require('path')
@@ -23,6 +24,7 @@ app.use(express.static(path.join(__dirname, 'assets')));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
+app.use(compression())
 // alloc CORS untuk API
 app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Origin', '*');

@@ -1,3 +1,6 @@
+
+const LZUTF8 = require('lzutf8');
+
 class Logger_model {
   constructor(pool) {
     this.pool = pool;
@@ -5,10 +8,13 @@ class Logger_model {
   log_single_data = async (table_name, payload) => {
     const meassurement_data = JSON.stringify(payload.meassurement_data.values);
     const timestamp_data = JSON.stringify(payload.meassurement_data.timestamp);
+
+    let compressed_measurement_data = String(LZUTF8.compress(meassurement_data, { outputEncoding: 'Base64' }));
+
     // console.log(meassurement_data);
     // console.log(timestamp_data);
     const query = `INSERT INTO ${table_name} (unix_timestamp, json, node, time_data)
-                         VALUES (${parseInt(timestamp_data)},'${meassurement_data}','${payload.node}','${timestamp_data}'); `;
+                         VALUES (${parseInt(timestamp_data)},'${compressed_measurement_data}','${payload.node}','${timestamp_data}'); `;
     // console.log(payload);
     const result = await this.pool.query(query);
     console.log('data logged');
@@ -49,9 +55,10 @@ class Logger_model {
   log_acc_array_data = async (table_name, payload) => {
     const meassurement_data = JSON.stringify(payload.meassurement_data);
     const timestamp_data = JSON.stringify(payload.time_data);
+    let compressed_measurement_data = String(LZUTF8.compress(meassurement_data, { outputEncoding: 'Base64' }));
+    let compressed_timestamp_data = String(LZUTF8.compress(timestamp_data, { outputEncoding: 'Base64' }));
     const query = `INSERT INTO ${table_name} (unix_timestamp, json, node, time_data)
-                         VALUES (${parseInt(payload.timestamp)},'${meassurement_data}','${payload.node}','${timestamp_data}'); `;
-    // console.log(payload);
+                         VALUES (${parseInt(payload.timestamp)},'${compressed_measurement_data}','${payload.node}','${compressed_timestamp_data}'); `;
     const result = await this.pool.query(query);
     console.log('data logged');
     return 1;

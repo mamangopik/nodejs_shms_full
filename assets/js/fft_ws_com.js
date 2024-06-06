@@ -34,7 +34,10 @@ var acc_data = {
     zkf: [],
     timestamp: []
 }
-
+var last_id_data = 0;
+var packet_id_overflow = 0;
+var packet_loss = 0;
+var peaks_req = 10;
 var render_fft_graph = 1;
 var mqtt;
 var reconnectTimeout = 2000;
@@ -53,10 +56,10 @@ var acc_to_send = {};
 var acc_to_send_kf = {};
 var acc_to_send_status = 0;
 var indeks = 0;
-var window_area = 1024 * 8;
+var window_area = 1024 * 4;
 var window_size = window_area;
 var last_length = 0;
-var fft_plot_heigh = 300;
+var fft_plot_heigh = 200;
 const clientId = "realtime_acc_publisher_" + Math.random().toString(16).substr(2, 8);
 
 const toolbar = {
@@ -231,7 +234,8 @@ const draw_fft = async (div, layout, data, peaks) => {
         const annotation = {
             x: parseFloat(peak[0]),
             y: parseFloat(peak[1]),
-            text: get_peak_label(parseFloat(peak[0]).toFixed(4), parseFloat(peak[1]).toFixed(4), i),
+            // text: get_peak_label(parseFloat(peak[0]).toFixed(4), parseFloat(peak[1]).toFixed(4), i),
+            text: i,
             showarrow: true,
             arrowhead: 2,
             ax: 0,
@@ -249,6 +253,15 @@ const draw_fft = async (div, layout, data, peaks) => {
             opacity: 0.7
         };
         layout.annotations.push(annotation);
+        if (data[0].name == 'X' || data[0].name == 'x') {
+            document.getElementsByClassName("fftx_peaks")[i - 1].innerHTML = `${i}). ${parseFloat(peak[0]).toFixed(3)}Hz @ ${parseFloat(peak[1]).toFixed(3)}mG`;
+        }
+        if (data[0].name == 'Y' || data[0].name == 'y') {
+            document.getElementsByClassName("ffty_peaks")[i - 1].innerHTML = `${i}). ${parseFloat(peak[0]).toFixed(3)}Hz @ ${parseFloat(peak[1]).toFixed(3)}mG`;
+        }
+        if (data[0].name == 'Z' || data[0].name == 'z') {
+            document.getElementsByClassName("fftz_peaks")[i - 1].innerHTML = `${i}). ${parseFloat(peak[0]).toFixed(3)}Hz @ ${parseFloat(peak[1]).toFixed(3)}mG`;
+        }
         i++;
     });
 
@@ -488,7 +501,7 @@ function connect() {
             if (acc_to_send_status == 1 && render_fft_graph == 1) {
                 // console.log("setatus")
                 acc_to_send_status = 0;
-                acc_to_send.peaks_req = 3;
+                acc_to_send.peaks_req = peaks_req;
                 ws.send(JSON.stringify(acc_to_send));
             }
             // else {
@@ -575,11 +588,7 @@ function connect() {
             // Plotly.newPlot(fft_graph_x, [fft_x, fft_x_kf], layout_fft.x, hide_toolbar);
             await draw_fft('fft_graph_x', layout_fft.x, [fft_x, fft_x_kf], data.peaks.x);
             // await draw_fft('fft_graph_x_kf', layout_fft.x, fft_x_kf, data.peaks_kf.x);
-            new Promise(() => {
-                peaks_table.x[0].innerHTML = `${parseFloat(data.peaks.x[0][0]).toFixed(4)}Hz, ${parseFloat(data.peaks.x[0][1]).toFixed(4)}mG`;
-                peaks_table.x[1].innerHTML = `${parseFloat(data.peaks.x[1][0]).toFixed(4)}Hz, ${parseFloat(data.peaks.x[1][1]).toFixed(4)}mG`;
-                peaks_table.x[2].innerHTML = `${parseFloat(data.peaks.x[2][0]).toFixed(4)}Hz, ${parseFloat(data.peaks.x[2][1]).toFixed(4)}mG`;
-            });
+
             if (render_fft_graph == 1) {
             }
         } else {
@@ -592,11 +601,7 @@ function connect() {
             if (render_fft_graph == 1) {
                 await draw_fft('fft_graph_y', layout_fft.y, [fft_y, fft_y_kf], data.peaks.y);
                 // await draw_fft('fft_graph_y_kf', layout_fft.y, fft_y_kf, data.peaks_kf.y);
-                new Promise(() => {
-                    peaks_table.y[0].innerHTML = `${parseFloat(data.peaks.y[0][0]).toFixed(4)}Hz, ${parseFloat(data.peaks.y[0][1]).toFixed(4)}mG`;
-                    peaks_table.y[1].innerHTML = `${parseFloat(data.peaks.y[1][0]).toFixed(4)}Hz, ${parseFloat(data.peaks.y[1][1]).toFixed(4)}mG`;
-                    peaks_table.y[2].innerHTML = `${parseFloat(data.peaks.y[2][0]).toFixed(4)}Hz, ${parseFloat(data.peaks.y[2][1]).toFixed(4)}mG`;
-                });
+
             }
         } else {
             document.getElementById('fft_graph_y').style.display = 'none';
@@ -608,11 +613,7 @@ function connect() {
             if (render_fft_graph == 1) {
                 await draw_fft('fft_graph_z', layout_fft.z, [fft_z, fft_z_kf], data.peaks.z);
                 // await draw_fft('fft_graph_z_kf', layout_fft.z, fft_z_kf, data.peaks_kf.z);
-                new Promise(() => {
-                    peaks_table.z[0].innerHTML = `${parseFloat(data.peaks.z[0][0]).toFixed(4)}Hz, ${parseFloat(data.peaks.z[0][1]).toFixed(4)}mG`;
-                    peaks_table.z[1].innerHTML = `${parseFloat(data.peaks.z[1][0]).toFixed(4)}Hz, ${parseFloat(data.peaks.z[1][1]).toFixed(4)}mG`;
-                    peaks_table.z[2].innerHTML = `${parseFloat(data.peaks.z[2][0]).toFixed(4)}Hz, ${parseFloat(data.peaks.z[2][1]).toFixed(4)}mG`;
-                });
+
             }
         } else {
             document.getElementById('fft_graph_z').style.display = 'none';
@@ -641,6 +642,18 @@ socket_io.on(topic, async (data) => {
     data_acc = data;
     last_log = data_acc.last_log;
     packet_length = data_acc.packet_size;
+    if (parseInt(data_acc.id_data) - parseInt(last_id_data) > 1) {
+        console.log("data loss");
+        packet_loss++;
+    }
+    if (parseInt(last_id_data) == 0 && parseInt(data_acc.id_data) == 0) {
+        console.log("initial start");
+    }
+    if (parseInt(last_id_data) > 0 && parseInt(data_acc.id_data) == 0) {
+        console.log("overflow");
+        packet_id_overflow++;
+    }
+    last_id_data = data_acc.id_data;
     if (data_acc.x_values) {
         // acc_to_send_status = 1;
         push_acc_data(data_acc);
@@ -675,12 +688,14 @@ const update_recv_data_info = async (index) => {
          Data in plot: ${0 + animation_pointer} to ${window_area + animation_pointer}</br>
          RSSI: <b>${RSSI}dB</b>, Battery Voltage: <b>${v_batt}</b>
          </br>Last Logged: <b>${new Date(last_log)}</b>
+         </br>Packet ID:${last_id_data} packet loss:${packet_loss} ID overflow:${packet_id_overflow}
         `;
             } else {
                 recorded_lbl.innerHTML = `Recorded data: ${acc_data.x.length},
          Data in plot: ${0 + animation_pointer} to ${window_area + animation_pointer}</br>
          RSSI: <b>${RSSI}dB</b>, Battery Voltage: <b>${v_batt}</b>
          </br>Last Logged: <b>Data logging is dissabled</b>
+         </br>Packet ID:${last_id_data} packet loss:${packet_loss} ID overflow:${packet_id_overflow}
         `;
             }
         })
@@ -712,6 +727,8 @@ const animate_acc = async (index, setInterval_id) => {
                 width: 1
             }
         };
+
+
         var zTrace = {
             y: acc_data.z.slice(index, index + window_size),
             text: acc_data.timestamp.slice(index, index + window_size),
@@ -803,32 +820,47 @@ const animate_acc = async (index, setInterval_id) => {
 }
 
 
-// setInterval(() => {
-//     if (acc_data.x.length > animation_pointer) {
-//         animate_acc(animation_pointer);
-//     }
-// }, 200);
+setInterval(() => {
+    if (acc_data.x.length > animation_pointer) {
+        animate_acc(animation_pointer);
+    }
+}, 200);
 let animation_id;
 let cntr = 0;
 
-window.onload = window.onfocus = function () {
-    render_fft_graph = 1;
-    animation_id = setInterval(() => {
-        if (acc_data.x.length > animation_pointer) {
-            animate_acc(animation_pointer);
-        }
-    }, 200);
-}
-window.onblur = function () {
-    clearInterval(animation_id);
-    render_fft_graph = 0;
-}
+// window.onload = window.onfocus = function () {
+//     render_fft_graph = 1;
+//     animation_id = setInterval(() => {
+//         if (acc_data.x.length > animation_pointer) {
+//             animate_acc(animation_pointer);
+//         }
+//     }, 200);
+// }
+// window.onblur = function () {
+//     clearInterval(animation_id);
+//     render_fft_graph = 0;
+// }
 
 setInterval(() => {
     update_recv_data_info(animation_pointer);
 }, 3000);
 
 
+setInterval(() => {
+    date = Date.now();
+    // Set the desired time zone (e.g., Asia/Shanghai for UTC+8)
+    let timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    // Create an Intl.DateTimeFormat object with the specified time zone
+    let formatter = new Intl.DateTimeFormat('en-GB', {
+        timeZone,
+        dateStyle: 'full',
+        timeStyle: 'long',
+    });
+
+    // Format the date in the desired time zone
+    formattedDateTime = formatter.format(date);
+    document.getElementById("jam").innerHTML = String(formattedDateTime);
+}, 1000);
 // DOM events
 // btn_scroll.onclick = () => {
 //     if (autoscroll_status === 1) {

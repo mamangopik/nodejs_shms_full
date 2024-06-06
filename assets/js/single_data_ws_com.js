@@ -1,6 +1,8 @@
 // DOM
 var graphDiv = document.getElementById('history_graph');
 // GLOBAL
+var RSSI = 0;
+var v_vbatt = 0;
 var instrument_name = "";
 var label = ""
 var label_kf = ""
@@ -133,6 +135,12 @@ const animate_data = async (index, setInterval_id) => {
         else {
             Plotly.newPlot('data_graph', plotData, layout, { renderer: 'webgl' });
         }
+        maxval = Math.max.apply(Math, dtrace.y);
+        minval = Math.min.apply(Math, dtrace.y);
+        avgval = eval(dtrace.y.join('+')) / dtrace.y.length;// dtrace.y => dtrace.y.reduce((a, b) => a + b) / dtrace.y.length;
+        document.getElementById("max-wrap").innerHTML = `MAX:${maxval}`;
+        document.getElementById("min-wrap").innerHTML = `MIN:${minval}`;
+        document.getElementById("avg-wrap").innerHTML = `AVG:${avgval}`;
     } catch (error) {
         console.error('something error:', error);
     }
@@ -218,6 +226,8 @@ const push_data = async (data) => {
 }
 socket_io.on(topic, async (data) => {
     console.log(data);
+    v_vbatt = data.v_vbatt;
+    RSSI = data.RSSI;
     label = data.label
     label_kf = 'filtered_' + data.label;
     push_data(data);
@@ -260,6 +270,10 @@ animation_id = setInterval(() => {
 window.onload = async () => {
     await getHwInfo();
 };
+
+setInterval(() => {
+    document.getElementById("hw_info").innerHTML = `RSSI: <b>${RSSI}db</b>, VBATT: <b>${v_vbatt}V</b>`
+}, 5000)
 
 document.getElementById('btn-set-cf').onclick = () => {
     let cf = document.getElementById('cf-input').value;

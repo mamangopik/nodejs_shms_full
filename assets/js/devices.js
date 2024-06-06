@@ -157,6 +157,8 @@ const draw_node_list = () => {
 			console.log(data);
 			device_container.innerHTML = '';
 			document.getElementById('btn-cancel').click();
+			let pointer = 0;
+			let buffer = "";
 			data.data.forEach(element => {
 				edit_prop.name.push(element.name);
 				edit_prop.type.push(element.type);
@@ -165,37 +167,54 @@ const draw_node_list = () => {
 				edit_prop.log_raw.push(element.log_raw);
 				nodes_dom.push(`edit_url_${element.id}`);
 				delete_buttons.push(`delete_url_${element.id}`);
-				device_container.innerHTML +=
-					`<div class="col-md-4 jumboron">
-                    <ul class="list-group">
-                        <li class="list-group-item">
-                            <div class="row">
-                                <a href="#delete" data-toggle="modal" data-target="#deleteModal" id="delete_url_${element.id}">
-                                    <img width="20" height="20" src="/images/delete.png" alt="delete">
+				if (pointer == 0) {
+					buffer += `<div class="row" style="align-items: center;">`;
+					console.log("head");
+				}
+				buffer +=
+					`<div class="col-md-4">
+				<ul class="list-group">
+				<li class="list-group-item">
+				<div class="row">
+				<a href="#delete" data-toggle="modal" data-target="#deleteModal" id="delete_url_${element.id}">
+				<img width="40" height="40" src="/images/delete.png" alt="delete">
                                 </a>
                                 <a href="#update" data-toggle="modal" data-target="#exampleModal" id="edit_url_${element.id}">
-                                    <img width="20" height="20" src="/images/edit.png" alt="edit">
+								<img width="40" height="40" src="/images/edit.png" alt="edit">
                                 </a>
                                 <a href="${baseUrl}/realtime_graph/${element.type}?topic=${element.topic}&id=${element.id}" target="_blank">
-                                    <img width="20" height="20" src="/images/open.png" alt="open">
+                                    <img width="40" height="40" src="/images/open.png" alt="open">
                                 </a>
 								<a href="${baseUrl}/logger_data/direct?id=${element.id}" target="_blank">
-                                    <img width="20" height="20" src="/images/log-file.png" alt="open">
+								<img width="40" height="40" src="/images/log-file.png" alt="open">
                                 </a>                
-                            </div>
-                            <br>
-                            <h4 class="list-group-item-heading">${element.name}</h4>
-                            <p class="list-group-item-text">
+								</div>
+								<br>
+								<h2 class="list-group-item-heading">${element.name}</h2>
+								<p class="list-group-item-text">
                                 <strong>Data Type:</strong> ${element.type}<br>
                                 <strong>Name:</strong> ${element.name}<br>
                                 <strong>Topic:</strong> ${element.topic}<br>
 								<strong>Log Raw Data:</strong> ${Boolean(element.log_raw)}<br><br>
                                 <strong>ID:</strong> ${element.id}<br><br>
-                            </p>
-                        </li>
-                    </ul>
-                </div>`
-			});
+								</p>
+								</li>
+								</ul>
+								</div>`;
+				console.log("body");
+				if (pointer == (2)) {
+					buffer += `</div>`
+					console.log("tail");
+				}
+				pointer++;
+				if (pointer == (3)) {
+					device_container.innerHTML += buffer;
+					pointer = 0;
+					buffer = "";
+				}
+			}
+			);
+			console.log(device_container.innerHTML);
 			nodes_dom.forEach(function (id, index) {
 				var element = document.getElementById(id);
 				if (element) {
@@ -204,7 +223,7 @@ const draw_node_list = () => {
 						console.log(id);
 						console.log("test")
 						update_id = edit_prop.id[index];
-						document.getElementById('edit-modal-lbl').innerHTML = "Edit Node Properties";
+						document.getElementById('edit-modal-lbl').innerHTML = "Edit Device Properties";
 						tb_name.value = edit_prop.name[index];
 						tb_type.value = edit_prop.type[index];
 						tb_topic.value = edit_prop.topic[index];
@@ -261,7 +280,7 @@ window.onload = () => {
 
 btn_add.onclick = () => {
 	mode = 'add';
-	document.getElementById('edit-modal-lbl').innerHTML = "Add new node";
+	document.getElementById('edit-modal-lbl').innerHTML = "Add new device";
 	tb_name.value = '';
 	tb_type.value = '';
 	tb_topic.value = '';

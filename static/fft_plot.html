@@ -95,41 +95,7 @@
 </head>
 
 <body>
-    <!-- <div class="container-fluid" id="peak-info-popup">
-        <div id="table-sheet">
-            <h3>Peaks</h3>
-            <table class="table table-bordered">
-                <thead>
-                    <tr>
-                        <th>Peak</th>
-                        <th>X Axis</th>
-                        <th>Y Axis</th>
-                        <th>Z Axis</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>1</td>
-                        <td class="table-peak peak-1-val-wrap">----</td>
-                        <td class="table-peak peak-1-val-wrap">----</td>
-                        <td class="table-peak peak-1-val-wrap">----</td>
-                    </tr>
-                    <tr>
-                        <td>2</td>
-                        <td class="table-peak peak-2-val-wrap">----</td>
-                        <td class="table-peak peak-2-val-wrap">----</td>
-                        <td class="table-peak peak-2-val-wrap">----</td>
-                    </tr>
-                    <tr>
-                        <td>3</td>
-                        <td class="table-peak peak-3-val-wrap">----</td>
-                        <td class="table-peak peak-3-val-wrap">----</td>
-                        <td class="table-peak peak-3-val-wrap">----</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    </div> -->
+
     <div class="container-fluid" id="plot-content">
         <div class="row" id="header-info">
             <div class="col-md-3">
@@ -142,102 +108,186 @@
                 <button id="btn-z" class="btn btn-primary btn-md" type="button">Z</button>
                 <button id="btn-download" class="btn btn-success" type="button">Download History</button>
             </div>
-            <table class="table table-bordered mytable">
-                <thead>
-                    <tr>
-                        <th>Peak</th>
-                        <th>X Axis</th>
-                        <th>Y Axis</th>
-                        <th>Z Axis</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>1</td>
-                        <td class="table-peak peak-1-val-wrap">----</td>
-                        <td class="table-peak peak-1-val-wrap">----</td>
-                        <td class="table-peak peak-1-val-wrap">----</td>
-                    </tr>
-                    <tr>
-                        <td>2</td>
-                        <td class="table-peak peak-2-val-wrap">----</td>
-                        <td class="table-peak peak-2-val-wrap">----</td>
-                        <td class="table-peak peak-2-val-wrap">----</td>
-                    </tr>
-                    <tr>
-                        <td>3</td>
-                        <td class="table-peak peak-3-val-wrap">----</td>
-                        <td class="table-peak peak-3-val-wrap">----</td>
-                        <td class="table-peak peak-3-val-wrap">----</td>
-                    </tr>
-                </tbody>
-            </table>
+            <div class="col-md-2">
+                <h4 id="jam">00:00:00</h4>
+            </div>
+
         </div>
-        <br><br><br><br><br><br>
-        <div class="row">
+        <br><br>
+        <!-- <div class="row">
             <div class="col-md-12 text-center">
                 <h3>Realtime Graph</h3>
             </div>
-        </div>
-        <div class="row">
-            <div class="col-md-12">
-                <div class="jumbotron jumbotron scrollable-div" style="height: 400px; overflow-y: auto;">
-                    <h3>Time Domain <button class="btn btn-disable">></button></h3>
-                    <div id='acc_graph' style="border-radius: 5%;"></div>
-                    <br>
-                    <div id='acc_graph_kalman' style="border-radius: 5%;"></div>
-                </div>
-            </div>
-        </div>
-        <div class="row">
-            <div class="jumbotron jumbotron scrollable-div" style="height: 400px; overflow-y: auto;">
-                <h3>Frequency Domain</h3>
-                <!-- Wrap the jumbotron content in a scrollable div -->
-                <div class="row">
-                    <div class="col-md-12 fft-plot-wrap">
-                        <div id='fft_graph_x' style="border-radius: 5%;"></div>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-md-12 fft-plot-wrap">
-                        <div id='fft_graph_y' style="border-radius: 5%;"></div>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-md-12 fft-plot-wrap">
-                        <div id='fft_graph_z' style="border-radius: 5%;"></div>
-                    </div>
-                </div>
-
-                <div class="row">
-                    <div class="col-md-12 fft-plot-wrap">
-                        <div id='fft_graph_x_kf' style="border-radius: 5%;"></div>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-md-12 fft-plot-wrap">
-                        <div id='fft_graph_y_kf' style="border-radius: 5%;"></div>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-md-12 fft-plot-wrap">
-                        <div id='fft_graph_z_kf' style="border-radius: 5%;"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-
+        </div> -->
         <div class="row">
             <div class="col-md-12">
                 <div class="jumbotron">
-                    <h3>Time Domain History</h3>
-                    <button class="btn btn-primary" id="btn-toggle-history-show">Show</button>
-                    <div id='acc_history' style="border-radius: 5%;"></div>
+                    <h4>Time Domain</h4>
+                    <div id='acc_graph' style="border-radius: 5%;"></div>
+                    <br>
+                    <div id='acc_graph_kalman' style="border-radius: 5%;"></div>
+
+                    <h4>Frequency Domain</h4>
+                    <!-- Wrap the jumbotron content in a scrollable div -->
+                    <div class="row">
+                        <div class="col-md-10 fft-plot-wrap">
+                            <div id='fft_graph_x' style="border-radius: 5%;"></div>
+                        </div>
+                        <div class="col-md-2 fft-plot-wrap">
+                            <div id='fft_x_info' style="border-radius: 5%;">
+                                <table>
+                                    <tbody>
+                                        <tr>
+                                            <td class="fftx_peaks"></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="fftx_peaks"></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="fftx_peaks"></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="fftx_peaks"></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="fftx_peaks"></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="fftx_peaks"></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="fftx_peaks"></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="fftx_peaks"></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="fftx_peaks"></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="fftx_peaks"></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-10 fft-plot-wrap">
+                            <div id='fft_graph_y' style="border-radius: 5%;"></div>
+                        </div>
+                        <div class="col-md-2 fft-plot-wrap">
+                            <div id='fft_y_info' style="border-radius: 5%;">
+                                <table>
+                                    <tbody>
+                                        <tr>
+                                            <td class="ffty_peaks"></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="ffty_peaks"></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="ffty_peaks"></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="ffty_peaks"></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="ffty_peaks"></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="ffty_peaks"></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="ffty_peaks"></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="ffty_peaks"></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="ffty_peaks"></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="ffty_peaks"></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-10 fft-plot-wrap">
+                            <div id='fft_graph_z' style="border-radius: 5%;"></div>
+                        </div>
+                        <div class="col-md-2 fft-plot-wrap">
+                            <div id='fft_z_info' style="border-radius: 5%;">
+                                <table>
+                                    <tbody>
+                                        <tr>
+                                            <td class="fftz_peaks"></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="fftz_peaks"></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="fftz_peaks"></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="fftz_peaks"></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="fftz_peaks"></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="fftz_peaks"></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="fftz_peaks"></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="fftz_peaks"></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="fftz_peaks"></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="fftz_peaks"></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12 fft-plot-wrap">
+                            <div id='fft_graph_x_kf' style="border-radius: 5%;"></div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12 fft-plot-wrap">
+                            <div id='fft_graph_y_kf' style="border-radius: 5%;"></div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12 fft-plot-wrap">
+                            <div id='fft_graph_z_kf' style="border-radius: 5%;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="jumbotron">
+                        <h3>Time Domain History</h3>
+                        <button class="btn btn-primary" id="btn-toggle-history-show">Show</button>
+                        <div id='acc_history' style="border-radius: 5%;"></div>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
 </body>
 <script src="/js/fft_ws_com.js"></script>
 
