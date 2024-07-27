@@ -167,40 +167,70 @@ const draw_node_list = () => {
 				edit_prop.log_raw.push(element.log_raw);
 				nodes_dom.push(`edit_url_${element.id}`);
 				delete_buttons.push(`delete_url_${element.id}`);
+				// buffer +=
+				// 	`<div class="col-md-4">
+				// <ul class="list-group">
+				// <li class="list-group-item">
+				// <div class="row">
+				// <a href="#delete" data-toggle="modal" data-target="#deleteModal" id="delete_url_${element.id}">
+				// <img width="40" height="40" src="/images/delete.png" alt="delete">
+				//                 </a>
+				//                 <a href="#update" data-toggle="modal" data-target="#exampleModal" id="edit_url_${element.id}">
+				// 				<img width="40" height="40" src="/images/edit.png" alt="edit">
+				//                 </a>
+				//                 <a href="${baseUrl}/realtime_graph/${element.type}?topic=${element.topic}&id=${element.id}" target="_blank">
+				//                     <img width="40" height="40" src="/images/open.png" alt="open">
+				//                 </a>
+				// 				<a href="${baseUrl}/logger_data/direct?id=${element.id}" target="_blank">
+				// 				<img width="40" height="40" src="/images/log-file.png" alt="open">
+				//                 </a>                
+				// 				</div>
+				// 				<br>
+				// 				<h2 class="list-group-item-heading">${element.name}</h2>
+				// 				<p class="list-group-item-text">
+				//                 <strong>Data Type:</strong> ${element.type}<br>
+				//                 <strong>Name:</strong> ${element.name}<br>
+				//                 <strong>Topic:</strong> ${element.topic}<br>
+				// 				<strong>Log Raw Data:</strong> ${Boolean(element.log_raw)}<br><br>
+				//                 <strong>ID:</strong> ${element.id}<br><br>
+				// 				</p>
+				// 				</li>
+				// 				</ul>
+				// 				</div>`;
 				if (pointer == 0) {
 					buffer += `<div class="row" style="align-items: center;">`;
 					console.log("head");
 				}
 				buffer +=
 					`<div class="col-md-4">
-				<ul class="list-group">
-				<li class="list-group-item">
-				<div class="row">
-				<a href="#delete" data-toggle="modal" data-target="#deleteModal" id="delete_url_${element.id}">
-				<img width="40" height="40" src="/images/delete.png" alt="delete">
-                                </a>
-                                <a href="#update" data-toggle="modal" data-target="#exampleModal" id="edit_url_${element.id}">
-								<img width="40" height="40" src="/images/edit.png" alt="edit">
-                                </a>
-                                <a href="${baseUrl}/realtime_graph/${element.type}?topic=${element.topic}&id=${element.id}" target="_blank">
-                                    <img width="40" height="40" src="/images/open.png" alt="open">
-                                </a>
-								<a href="${baseUrl}/logger_data/direct?id=${element.id}" target="_blank">
-								<img width="40" height="40" src="/images/log-file.png" alt="open">
-                                </a>                
-								</div>
-								<br>
-								<h2 class="list-group-item-heading">${element.name}</h2>
-								<p class="list-group-item-text">
-                                <strong>Data Type:</strong> ${element.type}<br>
-                                <strong>Name:</strong> ${element.name}<br>
-                                <strong>Topic:</strong> ${element.topic}<br>
-								<strong>Log Raw Data:</strong> ${Boolean(element.log_raw)}<br><br>
-                                <strong>ID:</strong> ${element.id}<br><br>
-								</p>
-								</li>
-								</ul>
-								</div>`;
+					<ul class="list-group">
+					<li class="list-group-item">
+					<div class="row">
+					<a href="#delete" data-toggle="modal" data-target="#deleteModal" id="delete_url_${element.id}">
+					<img width="40" height="40" src="/images/delete.png" alt="delete">
+				                    </a>
+				                    <a href="#update" data-toggle="modal" data-target="#exampleModal" id="edit_url_${element.id}">
+									<img width="40" height="40" src="/images/edit.png" alt="edit">
+				                    </a>
+				                    <a href="${baseUrl}/realtime_graph/${element.type}?topic=${element.topic}&id=${element.id}" target="_blank">
+				                        <img width="40" height="40" src="/images/open.png" alt="open">
+				                    </a>
+									<a href="${baseUrl}/logger_data/direct?id=${element.id}" target="_blank">
+									<img width="40" height="40" src="/images/log-file.png" alt="open">
+				                    </a>
+									</div>
+									<br>
+									<h2 class="list-group-item-heading">${element.name}</h2>
+									<p class="list-group-item-text">
+				                    <strong>Data Type:</strong> ${element.type}<br>
+				                    <strong>Name:</strong> ${element.name}<br>
+				                    <strong>Topic:</strong> ${element.topic}<br>
+									<strong>Log Raw Data:</strong> ${Boolean(element.log_raw)}<br><br>
+				                    <strong>ID:</strong> ${element.id}<br><br>
+									</p>
+									</li>
+									</ul>
+									</div>`;
 				console.log("body");
 				if (pointer == (2)) {
 					buffer += `</div>`
@@ -208,12 +238,12 @@ const draw_node_list = () => {
 				}
 				pointer++;
 				if (pointer == (3)) {
-					device_container.innerHTML += buffer;
 					pointer = 0;
-					buffer = "";
+					// buffer = "";
 				}
 			}
 			);
+			device_container.innerHTML = buffer;
 			console.log(device_container.innerHTML);
 			nodes_dom.forEach(function (id, index) {
 				var element = document.getElementById(id);

@@ -20,6 +20,7 @@ const compression = require('compression');
 const app = express();
 const path = require('path')
 
+
 app.use(express.static(path.join(__dirname, 'assets')));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));

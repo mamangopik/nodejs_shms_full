@@ -54,9 +54,15 @@ const baseUrl = window.location.protocol + "//" + window.location.host;
 var python_ws_addr = 'ws://' + window.location.host.replace(':7777', ':7778');
 var acc_to_send = {};
 var acc_to_send_kf = {};
+var acc_to_send_history = {
+    xHist: [],
+    yHist: [],
+    zHist: []
+};
 var acc_to_send_status = 0;
+var history_fft_status = 0;
 var indeks = 0;
-var window_area = 1024 * 4;
+var window_area = 1024 * 2;
 var window_size = window_area;
 var last_length = 0;
 var fft_plot_heigh = 200;
@@ -173,7 +179,9 @@ var autoscroll_status = 1;
 var interpolate_status = 1;
 
 // Functions
-
+function delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
 const findTopPeaks = async (x, y) => {
     max_x = Math.max.apply(null, x);
     max_y = Math.max.apply(null, y);
@@ -204,9 +212,13 @@ const update_history = async () => {
         mode: 'lines',
         name: 'z',
     };
+    acc_to_send_history.xHist = xhistory.y;
+    acc_to_send_history.yHist = yhistory.y;
+    acc_to_send_history.zHist = zhistory.y;
     data = [xhistory, yhistory, zhistory];
     if (show_history_status == 1) {
         Plotly.newPlot('acc_history', data, layout_history);
+        history_fft_status = 1;
     }
 }
 
@@ -229,11 +241,10 @@ const get_peak_label = (x, y, index) => {
 
 const draw_fft = async (div, layout, data, peaks) => {
     let i = 1;
-    peaks.forEach(peak => {
-        // console.log(peak);
+    for (let j = 0; j < peaks.length; j++) {
         const annotation = {
-            x: parseFloat(peak[0]),
-            y: parseFloat(peak[1]),
+            x: parseFloat(peaks[j][0]),
+            y: parseFloat(peaks[j][1]),
             // text: get_peak_label(parseFloat(peak[0]).toFixed(4), parseFloat(peak[1]).toFixed(4), i),
             text: i,
             showarrow: true,
@@ -254,16 +265,16 @@ const draw_fft = async (div, layout, data, peaks) => {
         };
         layout.annotations.push(annotation);
         if (data[0].name == 'X' || data[0].name == 'x') {
-            document.getElementsByClassName("fftx_peaks")[i - 1].innerHTML = `${i}). ${parseFloat(peak[0]).toFixed(3)}Hz @ ${parseFloat(peak[1]).toFixed(3)}mG`;
+            document.getElementsByClassName("fftx_peaks")[i - 1].innerHTML = `${i}). ${parseFloat(peaks[j][0]).toFixed(3)}Hz @ ${parseFloat(peaks[j][1]).toFixed(3)}mG`;
         }
         if (data[0].name == 'Y' || data[0].name == 'y') {
-            document.getElementsByClassName("ffty_peaks")[i - 1].innerHTML = `${i}). ${parseFloat(peak[0]).toFixed(3)}Hz @ ${parseFloat(peak[1]).toFixed(3)}mG`;
+            document.getElementsByClassName("ffty_peaks")[i - 1].innerHTML = `${i}). ${parseFloat(peaks[j][0]).toFixed(3)}Hz @ ${parseFloat(peaks[j][1]).toFixed(3)}mG`;
         }
         if (data[0].name == 'Z' || data[0].name == 'z') {
-            document.getElementsByClassName("fftz_peaks")[i - 1].innerHTML = `${i}). ${parseFloat(peak[0]).toFixed(3)}Hz @ ${parseFloat(peak[1]).toFixed(3)}mG`;
+            document.getElementsByClassName("fftz_peaks")[i - 1].innerHTML = `${i}). ${parseFloat(peaks[j][0]).toFixed(3)}Hz @ ${parseFloat(peaks[j][1]).toFixed(3)}mG`;
         }
         i++;
-    });
+    }
 
     Plotly.newPlot(div, data, layout, hide_toolbar, {
         staticPlot: true
@@ -275,37 +286,37 @@ const push_acc_data = async (data) => {
     RSSI = data.signal_strength;
     v_batt = data.battery_voltage;
     if (data.x_values) {
-        data.x_values.forEach(x => {
+        data.x_values.forEach(async x => {
             acc_data.x.push(parseFloat(x));
         });
     }
     if (data.y_values) {
-        data.y_values.forEach(y => {
+        data.y_values.forEach(async y => {
             acc_data.y.push(parseFloat(y));
         });
     }
     if (data.z_values) {
-        data.z_values.forEach(z => {
+        data.z_values.forEach(async z => {
             acc_data.z.push(parseFloat(z));
         });
     }
     if (data.xkf_values) {
-        data.xkf_values.forEach(x => {
+        data.xkf_values.forEach(async x => {
             acc_data.xkf.push(parseFloat(x));
         });
     }
     if (data.ykf_values) {
-        data.ykf_values.forEach(y => {
+        data.ykf_values.forEach(async y => {
             acc_data.ykf.push(parseFloat(y));
         });
     }
     if (data.zkf_values) {
-        data.zkf_values.forEach(z => {
+        data.zkf_values.forEach(async z => {
             acc_data.zkf.push(parseFloat(z));
         });
     }
     if (data.timestamp) {
-        data.timestamp.forEach(z => {
+        data.timestamp.forEach(async z => {
             timestamp = z;
             date = new Date(timestamp * 1000);
 
@@ -333,21 +344,6 @@ const push_acc_data = async (data) => {
             acc_data.timestamp.push(formattedDateTime);
         });
     }
-
-    // if (mqtt.isConnected()) {
-    //     acc_to_send.peaks_req = 3;
-    //     const mqttMessage = new Paho.MQTT.Message(JSON.stringify(acc_to_send));
-    //     mqttMessage.destinationName = "/shms/convert/acc";
-    //     mqtt.send(mqttMessage);
-
-    //     acc_to_send_kf.peaks_req = 3;
-    //     const mqttMessage_kf = new Paho.MQTT.Message(JSON.stringify(acc_to_send_kf));
-    //     mqttMessage_kf.destinationName = "/shms/convert/acc_kf";
-    //     mqtt.send(mqttMessage_kf);
-
-    // } else {
-    //     console.error("MQTT client is not connected");
-    // }
 }
 
 const download = async () => {
@@ -369,274 +365,288 @@ const download = async () => {
     document.body.removeChild(a);
 }
 
-// MQTT
-mqtt = new Paho.MQTT.Client(host, port, clientId);
-mqtt.onMessageArrived = onMessageArrived;
-mqtt.onConnectionLost = onConnectionLost;
+// SOCKET
+var socket_io = io.connect(baseUrl);
 
-var options = {
-    timeout: 3,
-    onSuccess: onConnect,
-};
+// function connect() {
+//     var ws = new WebSocket(python_ws_addr);
+//     ws.onopen = function () {
+//         console.log('terhubung ke socket');
+//         // acc_to_send_status = 1;
+//     }
+//     let fft_beacon = setInterval(() => {
+//         console.log("FFT requests");
+//         try {
+//             if (acc_to_send_status == 1 && render_fft_graph == 1) {
+//                 acc_to_send_status = 0;
+//                 acc_to_send.peaks_req = peaks_req;
+//                 ws.send(JSON.stringify(acc_to_send));
+//                 console.log("request realtime FFT data");
+//             }
+//             if (history_fft_status == 1) {
+//                 acc_to_send_history['fs'] = data_acc.sampling_frequency;
+//                 acc_to_send_history['cid'] = "history_" + clientId;
+//                 ws.send(JSON.stringify(acc_to_send_history));
+//                 console.log("request historycal FFT data");
+//             }
+//         } catch (error) {
+//             console.log(error);
+//         }
+//     }, 300);
+//     ws.onmessage = async function (e) {
+//         data = JSON.parse(e.data)
+//         if (data.cid != clientId) {
+//             console.log("FFT History");
+//             var hist_fft_x = {
+//                 x: data.data.xHist.frequency,
+//                 y: data.data.xHist.magnitude,
+//                 mode: 'lines',
+//                 type: 'scatter',
+//                 name: 'x',
+//                 line: {
+//                     color: 'rgb(3, 107, 252)',
+//                     width: 2
+//                 }
+//             };
+//             var hist_fft_y = {
+//                 x: data.data.yHist.frequency,
+//                 y: data.data.yHist.magnitude,
+//                 mode: 'lines',
+//                 type: 'scatter',
+//                 name: 'y',
+//                 line: {
+//                     color: 'rgb(237, 162, 21)',
+//                     width: 2
+//                 }
+//             };
+//             var hist_fft_z = {
+//                 x: data.data.zHist.frequency,
+//                 y: data.data.zHist.magnitude,
+//                 mode: 'lines',
+//                 type: 'scatter',
+//                 name: 'z',
+//                 line: {
+//                     color: 'rgb(242, 53, 53)',
+//                     width: 2
+//                 }
+//             };
+//             data = [];
+//             if (btn_axis.toggle_x == 1) data.push(hist_fft_x)
+//             if (btn_axis.toggle_y == 1) data.push(hist_fft_y)
+//             if (btn_axis.toggle_z == 1) data.push(hist_fft_z)
+//             if (show_history_status == 1) {
+//                 Plotly.newPlot('fft_history', data, layout_history);
+//                 history_fft_status = 0;
+//             }
+//         }
+//         if (data.cid == clientId) {
+//             var fft_x = {
+//                 x: data.data.x.frequency,
+//                 y: data.data.x.magnitude,
+//                 mode: 'lines',
+//                 type: 'scatter',
+//                 name: 'x',
+//                 line: {
+//                     color: 'rgb(3, 107, 252)',
+//                     width: 2
+//                 }
+//             };
+//             var fft_y = {
+//                 x: data.data.y.frequency,
+//                 y: data.data.y.magnitude,
+//                 mode: 'lines',
+//                 type: 'scatter',
+//                 name: 'y',
+//                 line: {
+//                     color: 'rgb(237, 162, 21)',
+//                     width: 2
+//                 }
+//             };
+//             var fft_z = {
+//                 x: data.data.z.frequency,
+//                 y: data.data.z.magnitude,
+//                 mode: 'lines',
+//                 type: 'scatter',
+//                 name: 'z',
+//                 line: {
+//                     color: 'rgb(242, 53, 53)',
+//                     width: 2
+//                 }
+//             };
 
-mqtt.connect(options);
+//             var fft_x_kf = {
+//                 x: data.data.x_kf.frequency,
+//                 y: data.data.x_kf.magnitude,
+//                 mode: 'lines',
+//                 type: 'scatter',
+//                 name: 'x_kf',
+//                 line: {
+//                     color: 'black',
+//                     width: 2
+//                 }
+//             };
+//             var fft_y_kf = {
+//                 x: data.data.y_kf.frequency,
+//                 y: data.data.y_kf.magnitude,
+//                 mode: 'lines',
+//                 type: 'scatter',
+//                 name: 'y_kf',
+//                 line: {
+//                     color: 'black',
+//                     width: 2
+//                 }
+//             };
+//             var fft_z_kf = {
+//                 x: data.data.z_kf.frequency,
+//                 y: data.data.z_kf.magnitude,
+//                 mode: 'lines',
+//                 type: 'scatter',
+//                 name: 'z_kf',
+//                 line: {
+//                     color: 'black',
+//                     width: 2
+//                 }
+//             };
 
-function onConnect() {
-    console.log("Connected");
-    // mqtt.subscribe(`/shms/convert/fft/${clientId}`);
-}
+//             if (btn_axis.toggle_x == 1) {
+//                 document.getElementById('fft_graph_x').style.display = 'block';
+//                 document.getElementById('fft_graph_x_kf').style.display = 'block';
+//                 draw_fft('fft_graph_x', layout_fft.x, [fft_x, fft_x_kf], data.peaks.x);
+//             } else {
+//                 document.getElementById('fft_graph_x').style.display = 'none';
+//                 document.getElementById('fft_graph_x_kf').style.display = 'none';
+//             }
+//             if (btn_axis.toggle_y == 1) {
+//                 document.getElementById('fft_graph_y').style.display = 'block';
+//                 document.getElementById('fft_graph_y_kf').style.display = 'block';
+//                 draw_fft('fft_graph_y', layout_fft.y, [fft_y, fft_y_kf], data.peaks.y);
+//             } else {
+//                 document.getElementById('fft_graph_y').style.display = 'none';
+//                 document.getElementById('fft_graph_y_kf').style.display = 'none';
+//             }
+//             if (btn_axis.toggle_z == 1) {
+//                 document.getElementById('fft_graph_z').style.display = 'block';
+//                 document.getElementById('fft_graph_z_kf').style.display = 'block';
+//                 draw_fft('fft_graph_z', layout_fft.z, [fft_z, fft_z_kf], data.peaks.z);
+//             } else {
+//                 document.getElementById('fft_graph_z').style.display = 'none';
+//                 document.getElementById('fft_graph_z_kf').style.display = 'none';
+//             }
+//         }
+//     };
 
-// Event handler for connection failure
-function onFailure(err) {
-    console.error("Failed to connect to MQTT broker:", err.errorMessage);
-    // Retry connection after a delay
-    setTimeout(() => {
-        mqtt.connect({ onSuccess: onConnect, onFailure: onFailure });
-    }, 5000); // Retry every 5 seconds
-}
+//     ws.onclose = function (e) {
+//         console.log('Socket is closed. Reconnect will be attempted in 1 second.', e.reason);
+//         clearInterval(fft_beacon);
+//         setTimeout(function () {
+//             connect();
+//         }, 1000);
+//     };
 
-// Event handler for connection loss
-function onConnectionLost(responseObject) {
-    if (responseObject.errorCode !== 0) {
-        console.error("Connection lost:", responseObject.errorMessage);
-        // Attempt automatic reconnection
-        setTimeout(() => {
-            mqtt.connect({ onSuccess: onConnect, onFailure: onFailure });
-        }, 1000); // Retry every 5 seconds
-    }
-}
-
-function onMessageArrived(message) {
-    let mqtt_payload = {
-        'topic': message.destinationName,
-        message: message.payloadString
-    }
-    let data = JSON.parse(mqtt_payload.message);
-    let fft_data = data.data;
-    let peaks = data.peaks;
-    let topic_in = data.topic_in;
-    console.log(topic_in)
-
+//     ws.onerror = function (err) {
+//         console.error('Socket encountered error: ', err.message, 'Closing socket');
+//         ws.close();
+//     };
+// }
+// run socket to python server
+// connect();
+socket_io.on(`fft_${topic}`, async (data) => {
+    // console.log(data);
     var fft_x = {
-        x: fft_data.x.frequency,
-        y: fft_data.x.magnitude,
+        x: data.data.x.frequency,
+        y: data.data.x.magnitude,
         mode: 'lines',
         type: 'scatter',
         name: 'x',
         line: {
-            color: 'rgb(0, 0, 255)',
+            color: 'rgb(3, 107, 252)',
             width: 2
         }
     };
     var fft_y = {
-        x: fft_data.y.frequency,
-        y: fft_data.y.magnitude,
+        x: data.data.y.frequency,
+        y: data.data.y.magnitude,
         mode: 'lines',
         type: 'scatter',
         name: 'y',
         line: {
-            color: 'rgb(0, 255, 0)',
+            color: 'rgb(237, 162, 21)',
             width: 2
         }
     };
     var fft_z = {
-        x: fft_data.z.frequency,
-        y: fft_data.z.magnitude,
+        x: data.data.z.frequency,
+        y: data.data.z.magnitude,
         mode: 'lines',
         type: 'scatter',
         name: 'z',
         line: {
-            color: 'rgb(255, 0, 0)',
+            color: 'rgb(242, 53, 53)',
             width: 2
         }
     };
 
-    if (topic_in == "/shms/convert/acc") {
-        new Promise(() => {
-            draw_fft('fft_graph_x', layout_fft.x, fft_x, peaks.x);
-            peaks_table.x[0].innerHTML = `${parseFloat(data.peaks.x[0][0]).toFixed(4)}Hz, ${parseFloat(data.peaks.x[0][1]).toFixed(4)}mG`;
-            peaks_table.x[1].innerHTML = `${parseFloat(data.peaks.x[1][0]).toFixed(4)}Hz, ${parseFloat(data.peaks.x[1][1]).toFixed(4)}mG`;
-            peaks_table.x[2].innerHTML = `${parseFloat(data.peaks.x[2][0]).toFixed(4)}Hz, ${parseFloat(data.peaks.x[2][1]).toFixed(4)}mG`;
-        });
-        new Promise(() => {
-            draw_fft('fft_graph_y', layout_fft.y, fft_y, peaks.y);
-            peaks_table.y[0].innerHTML = `${parseFloat(data.peaks.y[0][0]).toFixed(4)}Hz, ${parseFloat(data.peaks.y[0][1]).toFixed(4)}mG`;
-            peaks_table.y[1].innerHTML = `${parseFloat(data.peaks.y[1][0]).toFixed(4)}Hz, ${parseFloat(data.peaks.y[1][1]).toFixed(4)}mG`;
-            peaks_table.y[2].innerHTML = `${parseFloat(data.peaks.y[2][0]).toFixed(4)}Hz, ${parseFloat(data.peaks.y[2][1]).toFixed(4)}mG`;
-        });
-        new Promise(() => {
-            draw_fft('fft_graph_z', layout_fft.x, fft_z, peaks.z);
-            peaks_table.z[0].innerHTML = `${parseFloat(data.peaks.z[0][0]).toFixed(4)}Hz, ${parseFloat(data.peaks.z[0][1]).toFixed(4)}mG`;
-            peaks_table.z[1].innerHTML = `${parseFloat(data.peaks.z[1][0]).toFixed(4)}Hz, ${parseFloat(data.peaks.z[1][1]).toFixed(4)}mG`;
-            peaks_table.z[2].innerHTML = `${parseFloat(data.peaks.z[2][0]).toFixed(4)}Hz, ${parseFloat(data.peaks.z[2][1]).toFixed(4)}mG`;
-        });
-    } else if (topic_in == "/shms/convert/acc_kf") {
-        new Promise(() => {
-            fft_x.name = 'X KF';
-            draw_fft('fft_graph_x_kf', layout_fft.x, fft_x, peaks.x);
-        });
-        new Promise(() => {
-            fft_y.name = 'Y KF';
-            draw_fft('fft_graph_y_kf', layout_fft.y, fft_y, peaks.y);
-        });
-        new Promise(() => {
-            fft_z.name = 'Z KF';
-            draw_fft('fft_graph_z_kf', layout_fft.x, fft_z, peaks.z);
-        });
+    var fft_x_kf = {
+        x: data.data.x_kf.frequency,
+        y: data.data.x_kf.magnitude,
+        mode: 'lines',
+        type: 'scatter',
+        name: 'x_kf',
+        line: {
+            color: 'black',
+            width: 2
+        }
+    };
+    var fft_y_kf = {
+        x: data.data.y_kf.frequency,
+        y: data.data.y_kf.magnitude,
+        mode: 'lines',
+        type: 'scatter',
+        name: 'y_kf',
+        line: {
+            color: 'black',
+            width: 2
+        }
+    };
+    var fft_z_kf = {
+        x: data.data.z_kf.frequency,
+        y: data.data.z_kf.magnitude,
+        mode: 'lines',
+        type: 'scatter',
+        name: 'z_kf',
+        line: {
+            color: 'black',
+            width: 2
+        }
+    };
+
+    if (btn_axis.toggle_x == 1) {
+        document.getElementById('fft_graph_x').style.display = 'block';
+        document.getElementById('fft_graph_x_kf').style.display = 'block';
+        draw_fft('fft_graph_x', layout_fft.x, [fft_x, fft_x_kf], data.peaks.x);
+    } else {
+        document.getElementById('fft_graph_x').style.display = 'none';
+        document.getElementById('fft_graph_x_kf').style.display = 'none';
     }
-}
-// SOCKET
-var socket_io = io.connect(baseUrl);
-
-function connect() {
-    var ws = new WebSocket(python_ws_addr);
-    ws.onopen = function () {
-        console.log('terhubung ke socket');
-        // acc_to_send_status = 1;
+    if (btn_axis.toggle_y == 1) {
+        document.getElementById('fft_graph_y').style.display = 'block';
+        document.getElementById('fft_graph_y_kf').style.display = 'block';
+        draw_fft('fft_graph_y', layout_fft.y, [fft_y, fft_y_kf], data.peaks.y);
+    } else {
+        document.getElementById('fft_graph_y').style.display = 'none';
+        document.getElementById('fft_graph_y_kf').style.display = 'none';
     }
-    let fft_beacon = setInterval(() => {
-        // console.log("FFT requests");
-        try {
-            // console.log("ga error")
-            if (acc_to_send_status == 1 && render_fft_graph == 1) {
-                // console.log("setatus")
-                acc_to_send_status = 0;
-                acc_to_send.peaks_req = peaks_req;
-                ws.send(JSON.stringify(acc_to_send));
-            }
-            // else {
-            //     console.log("lali")
-            // }
-        } catch (error) {
-            console.log(error);
-        }
-    }, 300);
-    ws.onmessage = async function (e) {
-        console.log("FFT received");
-        data = JSON.parse(e.data)
-        var fft_x = {
-            x: data.data.x.frequency,
-            y: data.data.x.magnitude,
-            mode: 'lines',
-            type: 'scatter',
-            name: 'x',
-            line: {
-                color: 'rgb(3, 107, 252)',
-                width: 2
-            }
-        };
-        var fft_y = {
-            x: data.data.y.frequency,
-            y: data.data.y.magnitude,
-            mode: 'lines',
-            type: 'scatter',
-            name: 'y',
-            line: {
-                color: 'rgb(237, 162, 21)',
-                width: 2
-            }
-        };
-        var fft_z = {
-            x: data.data.z.frequency,
-            y: data.data.z.magnitude,
-            mode: 'lines',
-            type: 'scatter',
-            name: 'z',
-            line: {
-                color: 'rgb(242, 53, 53)',
-                width: 2
-            }
-        };
+    if (btn_axis.toggle_z == 1) {
+        document.getElementById('fft_graph_z').style.display = 'block';
+        document.getElementById('fft_graph_z_kf').style.display = 'block';
+        draw_fft('fft_graph_z', layout_fft.z, [fft_z, fft_z_kf], data.peaks.z);
+    } else {
+        document.getElementById('fft_graph_z').style.display = 'none';
+        document.getElementById('fft_graph_z_kf').style.display = 'none';
+    }
 
-        var fft_x_kf = {
-            x: data.data.x_kf.frequency,
-            y: data.data.x_kf.magnitude,
-            mode: 'lines',
-            type: 'scatter',
-            name: 'x_kf',
-            line: {
-                color: 'black',
-                width: 2
-            }
-        };
-        var fft_y_kf = {
-            x: data.data.y_kf.frequency,
-            y: data.data.y_kf.magnitude,
-            mode: 'lines',
-            type: 'scatter',
-            name: 'y_kf',
-            line: {
-                color: 'black',
-                width: 2
-            }
-        };
-        var fft_z_kf = {
-            x: data.data.z_kf.frequency,
-            y: data.data.z_kf.magnitude,
-            mode: 'lines',
-            type: 'scatter',
-            name: 'z_kf',
-            line: {
-                color: 'black',
-                width: 2
-            }
-        };
-
-        if (btn_axis.toggle_x == 1) {
-            document.getElementById('fft_graph_x').style.display = 'block';
-            document.getElementById('fft_graph_x_kf').style.display = 'block';
-            // Plotly.newPlot(fft_graph_x, [fft_x, fft_x_kf], layout_fft.x, hide_toolbar);
-            await draw_fft('fft_graph_x', layout_fft.x, [fft_x, fft_x_kf], data.peaks.x);
-            // await draw_fft('fft_graph_x_kf', layout_fft.x, fft_x_kf, data.peaks_kf.x);
-
-            if (render_fft_graph == 1) {
-            }
-        } else {
-            document.getElementById('fft_graph_x').style.display = 'none';
-            document.getElementById('fft_graph_x_kf').style.display = 'none';
-        }
-        if (btn_axis.toggle_y == 1) {
-            document.getElementById('fft_graph_y').style.display = 'block';
-            document.getElementById('fft_graph_y_kf').style.display = 'block';
-            if (render_fft_graph == 1) {
-                await draw_fft('fft_graph_y', layout_fft.y, [fft_y, fft_y_kf], data.peaks.y);
-                // await draw_fft('fft_graph_y_kf', layout_fft.y, fft_y_kf, data.peaks_kf.y);
-
-            }
-        } else {
-            document.getElementById('fft_graph_y').style.display = 'none';
-            document.getElementById('fft_graph_y_kf').style.display = 'none';
-        }
-        if (btn_axis.toggle_z == 1) {
-            document.getElementById('fft_graph_z').style.display = 'block';
-            document.getElementById('fft_graph_z_kf').style.display = 'block';
-            if (render_fft_graph == 1) {
-                await draw_fft('fft_graph_z', layout_fft.z, [fft_z, fft_z_kf], data.peaks.z);
-                // await draw_fft('fft_graph_z_kf', layout_fft.z, fft_z_kf, data.peaks_kf.z);
-
-            }
-        } else {
-            document.getElementById('fft_graph_z').style.display = 'none';
-            document.getElementById('fft_graph_z_kf').style.display = 'none';
-        }
-    };
-
-    ws.onclose = function (e) {
-        console.log('Socket is closed. Reconnect will be attempted in 1 second.', e.reason);
-        clearInterval(fft_beacon);
-        setTimeout(function () {
-            connect();
-        }, 1000);
-    };
-
-    ws.onerror = function (err) {
-        console.error('Socket encountered error: ', err.message, 'Closing socket');
-        ws.close();
-    };
 }
-// run socket to python server
-connect();
-
+);
 socket_io.on(topic, async (data) => {
     console.log(Intl.DateTimeFormat().resolvedOptions().timeZone)
     data_acc = data;
@@ -817,6 +827,7 @@ const animate_acc = async (index, setInterval_id) => {
     } catch (error) {
         console.error('something error:', error);
     }
+    await delay(20);
 }
 
 
@@ -824,7 +835,7 @@ setInterval(() => {
     if (acc_data.x.length > animation_pointer) {
         animate_acc(animation_pointer);
     }
-}, 200);
+}, 5);
 let animation_id;
 let cntr = 0;
 
@@ -933,10 +944,12 @@ document.getElementById("btn-toggle-history-show").onclick = () => {
         show_history_status = 0;
         document.getElementById("btn-toggle-history-show").innerHTML = "Show";
         document.getElementById("acc_history").style.display = 'none';
+        document.getElementById("fft_history").style.display = 'none';
     } else {
         show_history_status = 1;
         document.getElementById("btn-toggle-history-show").innerHTML = "Hide";
         document.getElementById("acc_history").style.display = 'block';
+        document.getElementById("fft_history").style.display = 'block';
     }
     console.log(show_history_status);
 }

@@ -1,14 +1,19 @@
 const socket = require('socket.io');
 const mqtt = require('mqtt')
+
+const libsocket = require('ws');
 const LZUTF8 = require('lzutf8');
 
 //global variable for acc_data
 var acc_data = {}
+var fft_data = {}
 var log_info = {}
+var acc_to_send = {}
 var single_data = {}
 var single_data_cf = {}
 var nodes_log_raw = {};
 var device_properties = {}
+var last_got_ws = 0;
 
 
 class Mqtt_handler {
@@ -27,6 +32,76 @@ class Mqtt_handler {
                 single_data_cf[payload.topic] = parseFloat(payload.cf_value);
             });
         })
+        // this.wss = new libsocket.WebSocket('ws://localhost:7778');
+
+        // const update_fft_data = async (topic, payload) => {
+
+        //     fft_data[topic] = {};
+        //     fft_data[topic] = payload;
+        //     this.io.local.emit(topic, fft_data[topic]);
+
+        //     payload = {
+        //         topic: topic,
+        //         data: acc_data[topic]
+        //     }
+        // }
+        // this.wss.on('message', (data) => {
+        //     // console.log(data.toString());
+        //     data = data.toString();
+        //     data = JSON.parse(data)
+        //     update_fft_data(`fft_${data.cid}`, data)
+        // });
+
+        this.wss = null;
+        const reconnectInterval = 5000; // Reconnect every 5 seconds
+
+        // Function to initialize WebSocket
+        const initializeWebSocket = () => {
+            try {
+
+                this.wss = new libsocket.WebSocket('ws://localhost:7778');
+
+                this.wss.on('open', function open() {
+                    console.log("ws connected");
+                });
+
+                const update_fft_data = async (topic, payload) => {
+                    fft_data[topic] = payload;
+                    this.io.local.emit(topic, fft_data[topic]);
+
+                    payload = {
+                        topic: topic,
+                        data: acc_data[topic]
+                    };
+                };
+
+                this.wss.on('message', (data) => {
+                    data = data.toString();
+                    data = JSON.parse(data);
+                    update_fft_data(`fft_${data.cid}`, data);
+                });
+
+                this.wss.on('close', function close() {
+                    console.log("ws connection closed, attempting to reconnect...");
+                    setTimeout(initializeWebSocket, reconnectInterval);
+                });
+
+                this.wss.on('error', function error(err) {
+                    console.log("ws connection error:", err);
+                    try {
+                        this.wss.close(); // Close the connection to trigger the reconnect logic
+                    } catch (error) {
+
+                    }
+                });
+            } catch (error) {
+
+            }
+        };
+
+        // Start WebSocket connection
+        initializeWebSocket();
+
 
 
         this.host = this.broker;
@@ -88,6 +163,10 @@ class Mqtt_handler {
                         let time_to_push = time_data_in - ((data_len - i) * (1 / payload.sampling_frequency)); //for 5ms sampling delay (200Hz)
                         obj.time_data.push(time_to_push);
                     }
+                    new Promise(async () => {
+                        this.update_fft_feeder_data(unparsed_topic, payload)
+                        this.request_fft(unparsed_topic, payload);
+                    });
                     new Promise(() => {
                         this.update_acc_data(unparsed_topic, payload, obj.time_data, obj)
                     });
@@ -238,6 +317,76 @@ class Mqtt_handler {
         }
     }
 
+    update_fft_feeder_data = async (topic, acc) => {
+        acc.x_values.forEach(async newData => {
+            try {
+                if (acc_to_send[topic]['x'].length >= 4096) {
+                    acc_to_send[topic]['x'].shift();
+                }
+            } catch (error) {
+                acc_to_send[topic] = { x: [], y: [], z: [], x_kf: [], y_kf: [], z_kf: [] }
+            }
+            acc_to_send[topic]['x'].push(newData);
+        });
+
+        acc.y_values.forEach(async newData => {
+            try {
+                if (acc_to_send[topic]['y'].length >= 4096) {
+                    acc_to_send[topic]['y'].shift();
+                }
+            } catch (error) {
+                acc_to_send[topic] = { x: [], y: [], z: [], x_kf: [], y_kf: [], z_kf: [] }
+            }
+            acc_to_send[topic]['y'].push(newData);
+        });
+
+        acc.z_values.forEach(async newData => {
+            try {
+                if (acc_to_send[topic]['z'].length >= 4096) {
+                    acc_to_send[topic]['z'].shift();
+                }
+            } catch (error) {
+                acc_to_send[topic] = { x: [], y: [], z: [], x_kf: [], y_kf: [], z_kf: [] }
+            }
+            acc_to_send[topic]['z'].push(newData);
+        });
+
+
+        acc.xkf_values.forEach(async newData => {
+            try {
+                if (acc_to_send[topic]['x_kf'].length >= 4096) {
+                    acc_to_send[topic]['x_kf'].shift();
+                }
+            } catch (error) {
+                acc_to_send[topic] = { x: [], y: [], z: [], x_kf: [], y_kf: [], z_kf: [] }
+            }
+            acc_to_send[topic]['x_kf'].push(newData);
+        });
+
+        acc.ykf_values.forEach(async newData => {
+            try {
+                if (acc_to_send[topic]['y_kf'].length >= 4096) {
+                    acc_to_send[topic]['y_kf'].shift();
+                }
+            } catch (error) {
+                acc_to_send[topic] = { x: [], y: [], z: [], x_kf: [], y_kf: [], z_kf: [] }
+            }
+            acc_to_send[topic]['y_kf'].push(newData);
+        });
+
+        acc.zkf_values.forEach(async newData => {
+            try {
+                if (acc_to_send[topic]['z_kf'].length >= 4096) {
+                    acc_to_send[topic]['z_kf'].shift();
+                }
+            } catch (error) {
+                acc_to_send[topic] = { x: [], y: [], z: [], x_kf: [], y_kf: [], z_kf: [] }
+            }
+            acc_to_send[topic]['z_kf'].push(newData);
+        });
+        // console.log(acc_to_send);
+    }
+
     remove_topic_subscribe = async (topic) => {
         try {
             this.client.unsubscribe(topic, (unsubscribeErr) => {
@@ -305,6 +454,26 @@ class Mqtt_handler {
         }
     }
 
+
+
+    request_fft = async (topic, payload) => {
+        payload['cid'] = topic
+        payload['fs'] = payload['sampling_frequency']
+        payload['x'] = acc_to_send[topic]['x']
+        payload['y'] = acc_to_send[topic]['y']
+        payload['z'] = acc_to_send[topic]['z']
+        payload['x_kf'] = acc_to_send[topic]['x_kf']
+        payload['y_kf'] = acc_to_send[topic]['y_kf']
+        payload['z_kf'] = acc_to_send[topic]['z_kf']
+        payload['peaks_req'] = 10
+        console.log(payload['x_kf'].length)
+        console.log(payload['y_kf'].length)
+        console.log(payload['z_kf'].length)
+        console.log("panjang ", payload['x'].length);
+        new Promise(() => {
+            this.wss.send(JSON.stringify(payload))
+        })
+    }
     update_single_data = async (topic, sensor_data, timestamp) => {
         single_data[topic] = {};
         single_data[topic] = sensor_data;
